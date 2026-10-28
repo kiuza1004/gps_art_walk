@@ -22,6 +22,8 @@ let guidePoints = []; // [{lat, lng}]
 let map = null;
 let trackPolyline = null;
 let guidePolyline = null;
+let guidePolygon = null;
+let startPointMarker = null;
 let myLocationMarker = null;
 
 // DOM 요소
@@ -287,22 +289,50 @@ function removeTrackPolyline() {
   }
 }
 
-function updateGuidePolyline() {
+function updateGuidePolyline(isAutoShape = false) {
   removeGuidePolyline();
   if (guidePoints.length < 2) return;
 
   const latlngs = guidePoints.map(p => [p.lat, p.lng]);
-  guidePolyline = L.polyline(latlngs, {
-    color: '#9E9E9E',
-    weight: 6,
-    dashArray: '12, 10',
-    opacity: 0.95,
-    lineCap: 'round',
-    lineJoin: 'round'
-  }).addTo(map);
+
+  if (isAutoShape) {
+    // 외곽선 모양을 뚜렷하게 나타내기 위한 외곽선 폴리곤 및 굵은 테두리
+    guidePolygon = L.polygon(latlngs, {
+      color: '#FF6D00',
+      weight: 6,
+      opacity: 0.95,
+      fillColor: '#FFB300',
+      fillOpacity: 0.18,
+      lineCap: 'round',
+      lineJoin: 'round'
+    }).addTo(map);
+
+    // 출발점 깃발 마커
+    const startPoint = latlngs[0];
+    const flagIcon = L.divIcon({
+      className: 'start-flag-marker',
+      html: '<div class="start-flag-bubble">🏁 출발</div>',
+      iconSize: [60, 30],
+      iconAnchor: [30, 30]
+    });
+    startPointMarker = L.marker(startPoint, { icon: flagIcon }).addTo(map);
+
+    // 도형 전체가 화면에 꽉 차도록 지도 영역 자동 이동
+    map.fitBounds(guidePolygon.getBounds().pad(0.2));
+  } else {
+    // 수동 밑그림용 점선 폴리라인
+    guidePolyline = L.polyline(latlngs, {
+      color: '#FF9800',
+      weight: 5,
+      dashArray: '10, 8',
+      opacity: 0.9,
+      lineCap: 'round',
+      lineJoin: 'round'
+    }).addTo(map);
+  }
 
   if (guidePoints.length >= 2) {
-    updateStatus('밑그림 완성 - 시작을 눌러 따라가세요');
+    updateStatus('외곽 코스 준비 완료 - 시작을 눌러 따라가세요');
   }
 }
 
@@ -310,6 +340,14 @@ function removeGuidePolyline() {
   if (guidePolyline) {
     map.removeLayer(guidePolyline);
     guidePolyline = null;
+  }
+  if (guidePolygon) {
+    map.removeLayer(guidePolygon);
+    guidePolygon = null;
+  }
+  if (startPointMarker) {
+    map.removeLayer(startPointMarker);
+    startPointMarker = null;
   }
 }
 
@@ -546,8 +584,8 @@ function generateShape(shapeType, maxLengthKm) {
       break;
   }
 
-  // 60개 포인트로 균등 보간
-  const rawPoints = interpolateShape(basePoints, 60);
+  // 외곽 실루엣을 뚜렷하게 유지하기 위한 균등 보간
+  const rawPoints = interpolateShape(basePoints, 50);
   const finalLengthKm = Math.min(idealLengthKm, maxLengthKm);
 
   // 상대 좌표계 둘레 계산
@@ -560,54 +598,20 @@ function generateShape(shapeType, maxLengthKm) {
 
   const scale = totalLengthRaw > 0 ? finalLengthKm / totalLengthRaw : 1.0;
 
-  // 지도 위경도로 투영
+  // 지도 위경도로 투영하여 명확한 외곽 윤곽선 생성
   const idealGeoPoints = rawPoints.map(p => {
     const dLat = (p[1] * scale) / 111.32;
     const dLon = (p[0] * scale) / (111.32 * Math.cos(center.lat * Math.PI / 180));
     return { lat: center.lat + dLat, lng: center.lng + dLon };
   });
 
-  updateStatus('도로 코스 탐색 중...');
+  // 복잡한 도로 우회로 인한 모양 왜곡을 방지하고 요청한 겉모양을 100% 유지하는 기본 외곽선 확정
+  guidePoints = idealGeoPoints;
+  updateGuidePolyline(true);
 
-  // OSRM Route API에 요청하기 위해 샘플링 (최대 25개)
-  const sampled = [];
-  const step = idealGeoPoints.length / 25;
-  for (let i = 0; i < 25; i++) {
-    sampled.push(idealGeoPoints[Math.floor(i * step)]);
-  }
-
-  const coordinates = sampled.map(p => `${p.lng.toFixed(6)},${p.lat.toFixed(6)}`).join(';');
-  const apiUrl = `https://router.project-osrm.org/route/v1/driving/${coordinates}?overview=full&geometries=geojson`;
-
-  fetch(apiUrl)
-    .then(res => res.json())
-    .then(data => {
-      if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
-        const coords = data.routes[0].geometry.coordinates;
-        const snapped = coords.map(c => ({ lat: c[1], lng: c[0] }));
-        if (snapped.length > 0) {
-          guidePoints = snapped;
-          updateGuidePolyline();
-          updateStatus('코스 생성 완료 - 시작을 눌러 따라가세요');
-          tvCurrentShape.textContent = `모양: ${SHAPE_NAMES[shapeType]}`;
-          tvCurrentShape.style.display = 'block';
-          return;
-        }
-      }
-      fallbackToIdealPoints();
-    })
-    .catch(() => {
-      fallbackToIdealPoints();
-    });
-
-  function fallbackToIdealPoints() {
-    guidePoints = idealGeoPoints;
-    updateGuidePolyline();
-    showAlert('주변 도로망을 찾을 수 없어 기본 도형으로 표시합니다.');
-    updateStatus('코스 생성 완료 - 시작을 눌러 따라가세요');
-    tvCurrentShape.textContent = `모양: ${SHAPE_NAMES[shapeType]}`;
-    tvCurrentShape.style.display = 'block';
-  }
+  tvCurrentShape.textContent = `외곽 모양: ${SHAPE_NAMES[shapeType]} (${finalLengthKm.toFixed(1)}km)`;
+  tvCurrentShape.style.display = 'block';
+  updateStatus(`외곽 모양 생성 완료 - 🏁 출발점에서 시작하세요`);
 }
 
 // --- 공통 헬퍼 ---

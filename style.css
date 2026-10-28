@@ -388,3 +388,32 @@ html, body {
     opacity: 0;
   }
 }
+
+/* 출발점 마커 스타일 */
+.start-flag-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.start-flag-bubble {
+  background: linear-gradient(135deg, #FF6D00, #E65100);
+  color: #FFFFFF;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45);
+  border: 1.5px solid #FFFFFF;
+  white-space: nowrap;
+  animation: bounceFlag 1.6s infinite ease-in-out;
+}
+
+@keyframes bounceFlag {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
