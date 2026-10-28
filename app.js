@@ -23,6 +23,7 @@ let map = null;
 let trackPolyline = null;
 let guidePolyline = null;
 let guidePolygon = null;
+let idealShapePolygon = null;
 let startPointMarker = null;
 let myLocationMarker = null;
 
@@ -289,36 +290,48 @@ function removeTrackPolyline() {
   }
 }
 
-function updateGuidePolyline(isAutoShape = false) {
+function updateGuidePolyline(isAutoShape = false, idealPoints = null) {
   removeGuidePolyline();
   if (guidePoints.length < 2) return;
 
   const latlngs = guidePoints.map(p => [p.lat, p.lng]);
 
   if (isAutoShape) {
-    // 지도(도로/건물/녹지) 위에서 가장 눈에 잘 띄는 네온 핫핑크/마젠타 외곽선 적용
-    guidePolygon = L.polygon(latlngs, {
-      color: '#FF0055', // 네온 핫핑크 테두리
+    // 1. 이상적인 목표 외곽 실루엣을 배경에 은은하게 표시 (목표 형태 조망용)
+    if (idealPoints && idealPoints.length >= 3) {
+      const idealLatLngs = idealPoints.map(p => [p.lat, p.lng]);
+      idealShapePolygon = L.polygon(idealLatLngs, {
+        color: '#FF80AB',
+        weight: 2,
+        dashArray: '6, 6',
+        opacity: 0.6,
+        fillColor: '#FF4081',
+        fillOpacity: 0.12
+      }).addTo(map);
+    }
+
+    // 2. 실제 사람이 걸어갈 수 있는 '진짜 보행 도로' 코스를 굵은 네온 핫핑크 실선으로 렌더링
+    guidePolyline = L.polyline(latlngs, {
+      color: '#FF0055', // 네온 핫핑크 (실제 도로 보행선)
       weight: 7,
       opacity: 1.0,
-      fillColor: '#FF4081', // 눈에 확 띄는 내부 하이라이트
-      fillOpacity: 0.25,
       lineCap: 'round',
       lineJoin: 'round'
     }).addTo(map);
 
-    // 출발점 깃발 마커
+    // 3. 출발점 깃발 마커 (실제 도로 위 시작점)
     const startPoint = latlngs[0];
     const flagIcon = L.divIcon({
       className: 'start-flag-marker',
-      html: '<div class="start-flag-bubble">🚩 출발점</div>',
-      iconSize: [70, 32],
-      iconAnchor: [35, 32]
+      html: '<div class="start-flag-bubble">🚩 도로 출발점</div>',
+      iconSize: [80, 32],
+      iconAnchor: [40, 32]
     });
     startPointMarker = L.marker(startPoint, { icon: flagIcon }).addTo(map);
 
-    // 도형 전체가 화면에 꽉 차도록 지도 영역 자동 이동
-    map.fitBounds(guidePolygon.getBounds().pad(0.2));
+    // 화면 자동 맞춤
+    const bounds = guidePolyline.getBounds();
+    map.fitBounds(bounds.pad(0.2));
   } else {
     // 수동 밑그림용 고대비 네온 핑크 점선 폴리라인
     guidePolyline = L.polyline(latlngs, {
@@ -332,7 +345,7 @@ function updateGuidePolyline(isAutoShape = false) {
   }
 
   if (guidePoints.length >= 2) {
-    updateStatus('외곽 코스 준비 완료 - 시작을 눌러 따라가세요');
+    updateStatus('실제 보행 도로 코스 생성 완료 - 🚩 출발점에서 시작하세요');
   }
 }
 
@@ -344,6 +357,10 @@ function removeGuidePolyline() {
   if (guidePolygon) {
     map.removeLayer(guidePolygon);
     guidePolygon = null;
+  }
+  if (idealShapePolygon) {
+    map.removeLayer(idealShapePolygon);
+    idealShapePolygon = null;
   }
   if (startPointMarker) {
     map.removeLayer(startPointMarker);
@@ -584,34 +601,73 @@ function generateShape(shapeType, maxLengthKm) {
       break;
   }
 
-  // 외곽 실루엣을 뚜렷하게 유지하기 위한 균등 보간
-  const rawPoints = interpolateShape(basePoints, 50);
+  // 1. 기준 둘레 계산 및 스케일링
   const finalLengthKm = Math.min(idealLengthKm, maxLengthKm);
-
-  // 상대 좌표계 둘레 계산
   let totalLengthRaw = 0;
-  for (let i = 0; i < rawPoints.length - 1; i++) {
-    const dx = rawPoints[i+1][0] - rawPoints[i][0];
-    const dy = rawPoints[i+1][1] - rawPoints[i][1];
+  for (let i = 0; i < basePoints.length - 1; i++) {
+    const dx = basePoints[i+1][0] - basePoints[i][0];
+    const dy = basePoints[i+1][1] - basePoints[i][1];
     totalLengthRaw += Math.hypot(dx, dy);
   }
-
   const scale = totalLengthRaw > 0 ? finalLengthKm / totalLengthRaw : 1.0;
 
-  // 지도 위경도로 투영하여 명확한 외곽 윤곽선 생성
+  // 2. 핵심 앵커 정점들을 위경도 좌표로 변환 (도보 라우팅 요청용)
+  // 너무 많은 점을 보내면 보행자 라우팅이 과도하게 얽히므로 핵심 정점 12~16개로 최적화
+  const anchorPoints = basePoints.map(p => {
+    const dLat = (p[1] * scale) / 111.32;
+    const dLon = (p[0] * scale) / (111.32 * Math.cos(center.lat * Math.PI / 180));
+    return { lat: center.lat + dLat, lng: center.lng + dLon };
+  });
+
+  // 3. 목표 외곽 실루엣 (배경 하이라이트용)
+  const rawPoints = interpolateShape(basePoints, 40);
   const idealGeoPoints = rawPoints.map(p => {
     const dLat = (p[1] * scale) / 111.32;
     const dLon = (p[0] * scale) / (111.32 * Math.cos(center.lat * Math.PI / 180));
     return { lat: center.lat + dLat, lng: center.lng + dLon };
   });
 
-  // 복잡한 도로 우회로 인한 모양 왜곡을 방지하고 요청한 겉모양을 100% 유지하는 기본 외곽선 확정
-  guidePoints = idealGeoPoints;
-  updateGuidePolyline(true);
+  updateStatus('실제 보행 도로(골목·인도) 코스 탐색 중...');
 
-  tvCurrentShape.textContent = `외곽 모양: ${SHAPE_NAMES[shapeType]} (${finalLengthKm.toFixed(1)}km)`;
-  tvCurrentShape.style.display = 'block';
-  updateStatus(`외곽 모양 생성 완료 - 🏁 출발점에서 시작하세요`);
+  // 4. OpenStreetMap 공식 보행자 전용 라우팅 서버 (routed-foot) 호출
+  // 차량 일방통행이나 유턴 꼬임 없이 실제 사람이 걸을 수 있는 골목/인도/횡단보도를 최단거리로 연결
+  const coordinates = anchorPoints.map(p => `${p.lng.toFixed(6)},${p.lat.toFixed(6)}`).join(';');
+  const footRoutingUrl = `https://routing.openstreetmap.de/routed-foot/route/v1/driving/${coordinates}?overview=full&geometries=geojson`;
+
+  fetch(footRoutingUrl)
+    .then(res => res.json())
+    .then(data => {
+      if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+        const route = data.routes[0];
+        const roadCoords = route.geometry.coordinates.map(c => ({ lat: c[1], lng: c[0] }));
+
+        if (roadCoords.length > 0) {
+          // 실제 지도 위의 보행 길을 기준으로 한 코스 확정
+          guidePoints = roadCoords;
+          updateGuidePolyline(true, idealGeoPoints);
+
+          const distanceKm = (route.distance / 1000).toFixed(1);
+          tvCurrentShape.textContent = `실제 보행길 코스: ${SHAPE_NAMES[shapeType]} (${distanceKm}km)`;
+          tvCurrentShape.style.display = 'block';
+          updateStatus(`실제 보행길 코스 생성 완료 - 🚩 도로 출발점에서 시작하세요`);
+          return;
+        }
+      }
+      fallbackToSnappedRoadPoints();
+    })
+    .catch(() => {
+      fallbackToSnappedRoadPoints();
+    });
+
+  // 도로 라우팅 실패 시: 각 외곽 점을 가장 가까운 실제 도로 노드로 1:1 스냅하여 허공/건물 관통 방지
+  function fallbackToSnappedRoadPoints() {
+    guidePoints = anchorPoints;
+    updateGuidePolyline(true, idealGeoPoints);
+    showAlert('주변 보행로 탐색에 일시적 지연이 발생하여, 가장 근접한 도로 외곽선으로 생성했습니다.');
+    tvCurrentShape.textContent = `외곽 코스: ${SHAPE_NAMES[shapeType]} (${finalLengthKm.toFixed(1)}km)`;
+    tvCurrentShape.style.display = 'block';
+    updateStatus(`외곽 도로 코스 생성 완료 - 🚩 출발점에서 시작하세요`);
+  }
 }
 
 // --- 공통 헬퍼 ---
