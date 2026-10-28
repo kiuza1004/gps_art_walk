@@ -8,13 +8,13 @@
   <!-- Leaflet 1.9.4 CSS (검증된 하위 호환성 및 안정성) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-  <link rel="stylesheet" href="style.css?v=argon_2">
+  <link rel="stylesheet" href="style.css?v=argon_3">
 </head>
 <body>
   <!-- 1. 메인 지도 컨테이너 -->
   <div id="mapView"></div>
 
-  <!-- 2. 상단 Argon 헤더 & 모드 세그먼트 탭 -->
+  <!-- 2. 상단 일체형 Argon 헤더 (모드 탭 + 코스 정보 + 도안 비교 패널을 단일 카드 플로우로 통합하여 겹침 원천 차단) -->
   <header class="argon-header" id="topPanel">
     <div class="header-top-row">
       <div class="brand-title">
@@ -22,7 +22,7 @@
         <span>GPS ART WALK</span>
         <span class="argon-tag">ARGON</span>
       </div>
-      <!-- 지도 타일 테마 전환 버튼 (일반 상세 지도 기본 선택) -->
+      <!-- 지도 타일 테마 전환 버튼 -->
       <div class="map-theme-switcher" id="themeSwitcher">
         <button class="theme-btn active" data-theme="osm" title="상세 일반 지도">🗺️ 일반</button>
         <button class="theme-btn" data-theme="light" title="클린 아트 지도">☀️ 밝은배경</button>
@@ -30,7 +30,7 @@
       </div>
     </div>
 
-    <!-- 직관적인 3단 모드 선택 탭 (구식 select 대체 + 하위 호환을 위한 히든 select 유지) -->
+    <!-- 3단 모드 선택 탭 -->
     <div class="mode-tabs" id="modeTabs">
       <button class="mode-tab active" data-mode="FREE_DRAW">🎨 자유 그리기</button>
       <button class="mode-tab" data-mode="FOLLOW_ROUTE">✍️ 밑그림 스냅</button>
@@ -41,38 +41,38 @@
       <option value="FOLLOW_ROUTE">경로 따라가기</option>
       <option value="AUTO_SHAPE">자동 모양 만들기</option>
     </select>
+
+    <!-- 3. 코스 정보 바 & 도안 맞춰보기 버튼 (헤더 내부 하단 슬롯으로 배치되어 절대 겹치지 않음) -->
+    <div class="argon-sub-bar" id="shapeInfoBar" style="display: none;">
+      <div class="shape-badge-wrap">
+        <span id="tvCurrentShape" class="shape-badge">강아지 (2.0km)</span>
+        <span id="tvMatchScore" class="match-score-badge">일치도 92%</span>
+      </div>
+      <div class="shape-action-btns">
+        <button id="btnRematchRoad" class="btn-icon-action" title="현재 지도 중심의 길로 다시 맞추기">🔄 길 재매칭</button>
+        <button id="btnToggleCompare" class="btn-compare">🔍 도안 맞춰보기</button>
+      </div>
+    </div>
+
+    <!-- 3-1. 도안 겹쳐보기(맞춤 검증) 확장 패널 -->
+    <div id="compareBar" class="argon-compare-panel" style="display: none;">
+      <div class="compare-tabs">
+        <button class="compare-tab" data-view="road">실제 보행길만</button>
+        <button class="compare-tab active" data-view="both">1:1 겹쳐 비교</button>
+        <button class="compare-tab" data-view="origin">원본 도안만</button>
+      </div>
+      <div class="compare-slider-row">
+        <span class="compare-label">원본 도안 투명도</span>
+        <input type="range" id="compareOpacitySlider" min="5" max="95" value="45" class="compare-slider">
+        <span id="compareOpacityVal" class="compare-val">45%</span>
+      </div>
+      <div class="compare-slider-row" style="margin-top: 8px;">
+        <span class="compare-label">도안 회전 각도</span>
+        <input type="range" id="shapeRotateSlider" min="0" max="360" value="0" step="15" class="compare-slider">
+        <span id="shapeRotateVal" class="compare-val">0°</span>
+      </div>
+    </div>
   </header>
-
-  <!-- 3. 코스 정보 바 & 도안 맞춰보기 / 재매칭 컨트롤 -->
-  <div class="shape-info-bar" id="shapeInfoBar" style="display: none;">
-    <div class="shape-badge-wrap">
-      <span id="tvCurrentShape" class="shape-badge">강아지 (2.0km)</span>
-      <span id="tvMatchScore" class="match-score-badge">일치도 92%</span>
-    </div>
-    <div class="shape-action-btns">
-      <button id="btnRematchRoad" class="btn-icon-action" title="현재 지도 중심의 길로 다시 맞추기">🔄 길 재매칭</button>
-      <button id="btnToggleCompare" class="btn-compare">🔍 도안 맞춰보기</button>
-    </div>
-  </div>
-
-  <!-- 3-1. 도안 겹쳐보기(맞춤 검증) 확장 패널 -->
-  <div id="compareBar" class="compare-bar" style="display: none;">
-    <div class="compare-tabs">
-      <button class="compare-tab" data-view="road">실제 보행길만</button>
-      <button class="compare-tab active" data-view="both">1:1 겹쳐 비교</button>
-      <button class="compare-tab" data-view="origin">원본 도안만</button>
-    </div>
-    <div class="compare-slider-row">
-      <span class="compare-label">원본 도안 투명도</span>
-      <input type="range" id="compareOpacitySlider" min="5" max="95" value="45" class="compare-slider">
-      <span id="compareOpacityVal" class="compare-val">45%</span>
-    </div>
-    <div class="compare-slider-row" style="margin-top: 8px;">
-      <span class="compare-label">도안 회전 각도</span>
-      <input type="range" id="shapeRotateSlider" min="0" max="360" value="0" step="15" class="compare-slider">
-      <span id="shapeRotateVal" class="compare-val">0°</span>
-    </div>
-  </div>
 
   <!-- 4. 우측 플로팅 퀵 액션 버튼 그룹 (시뮬레이션 / GPX 내보내기 / 내 위치) -->
   <div class="floating-controls">
@@ -211,6 +211,6 @@
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
           integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  <script src="app.js?v=argon_2"></script>
+  <script src="app.js?v=argon_3"></script>
 </body>
 </html>
