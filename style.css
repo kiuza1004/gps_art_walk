@@ -1,7 +1,7 @@
 :root {
   --bg-deep: #0B0C10;
-  --glass-bg: rgba(18, 20, 28, 0.86);
-  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-bg: rgba(18, 20, 28, 0.88);
+  --glass-border: rgba(255, 255, 255, 0.14);
   --neon-pink: #FF0055;
   --neon-pink-glow: rgba(255, 0, 85, 0.45);
   --neon-cyan: #00F0FF;
@@ -40,7 +40,11 @@ html, body {
   background-color: #E5E3DF;
 }
 
-/* 고대비 나이트 모드: 도로와 한글 지명을 선명하게 유지하면서 다크 테마로 변환 */
+/* 단일 OSM 타일 기반 CSS 필터 테마 (타일이 지워지거나 깨지는 현상 원천 차단) */
+#mapView.map-theme-light .leaflet-tile-pane {
+  filter: brightness(107%) contrast(86%) saturate(45%);
+}
+
 #mapView.map-theme-night .leaflet-tile-pane {
   filter: invert(92%) hue-rotate(185deg) brightness(98%) contrast(92%);
 }
@@ -50,13 +54,92 @@ html, body {
 }
 
 /* ==========================================
-   1. 상단 Argon 헤더 & 모드 세그먼트 탭
+   0. 지도만 보기 모드 (Zen Mode) 초소형 미니 상단 바
+   ========================================== */
+.mini-hud-bar {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  max-width: 560px;
+  margin: 0 auto;
+  z-index: 1001;
+  background: rgba(15, 18, 26, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 30px;
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+}
+
+.mini-hud-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #FFFFFF;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mini-divider {
+  color: rgba(255, 255, 255, 0.25);
+}
+
+.mini-stat {
+  color: var(--neon-cyan);
+  font-family: monospace;
+}
+
+.mini-hud-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.btn-mini {
+  background: rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-mini-start {
+  background: linear-gradient(135deg, #00C853, #009624);
+  border-color: #69F0AE;
+}
+
+.btn-mini-start.tracking {
+  background: linear-gradient(135deg, #FF1744, #D50000);
+  border-color: #FF8A80;
+}
+
+.btn-mini-expand {
+  background: linear-gradient(135deg, #2563EB, #06B6D4);
+  border-color: #67E8F9;
+}
+
+/* ==========================================
+   1. 상단 Argon 설정 헤더
    ========================================== */
 .argon-header {
   position: absolute;
-  top: 12px;
-  left: 12px;
-  right: 12px;
+  top: 10px;
+  left: 10px;
+  right: 10px;
   max-width: 560px;
   margin: 0 auto;
   z-index: 1000;
@@ -64,27 +147,35 @@ html, body {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--glass-border);
-  border-radius: 20px;
-  padding: 10px 12px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+  border-radius: 18px;
+  padding: 9px 11px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+body.zen-mode .argon-header {
+  transform: translateY(-130%);
+  opacity: 0;
+  pointer-events: none;
 }
 
 .header-top-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
-  padding: 0 4px;
+  margin-bottom: 8px;
+  gap: 6px;
 }
 
 .brand-title {
   display: flex;
   align-items: center;
-  gap: 7px;
-  font-size: 14px;
+  gap: 6px;
+  font-size: 13px;
   font-weight: 800;
-  letter-spacing: 0.6px;
+  letter-spacing: 0.4px;
   color: #FFFFFF;
+  white-space: nowrap;
 }
 
 .argon-dot {
@@ -92,25 +183,31 @@ html, body {
   height: 8px;
   border-radius: 50%;
   background: var(--neon-cyan);
-  box-shadow: 0 0 10px var(--neon-cyan);
+  box-shadow: 0 0 8px var(--neon-cyan);
+  flex-shrink: 0;
 }
 
 .argon-tag {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 900;
-  padding: 2px 6px;
-  border-radius: 6px;
+  padding: 2px 5px;
+  border-radius: 5px;
   background: linear-gradient(135deg, var(--neon-pink), #7928CA);
   color: #FFFFFF;
-  letter-spacing: 0.8px;
+}
+
+.header-right-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .map-theme-switcher {
   display: flex;
-  gap: 4px;
-  background: rgba(255, 255, 255, 0.06);
-  padding: 3px;
-  border-radius: 10px;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.07);
+  padding: 2px;
+  border-radius: 9px;
 }
 
 .theme-btn {
@@ -119,44 +216,73 @@ html, body {
   color: var(--text-secondary);
   font-size: 11px;
   font-weight: 700;
-  padding: 4px 8px;
+  padding: 4px 7px;
   border-radius: 7px;
   cursor: pointer;
   transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
 .theme-btn.active {
-  background: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.18);
   color: #FFFFFF;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.btn-collapse-ui {
+  background: rgba(255, 255, 255, 0.12);
+  color: #E2E8F0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
 .mode-tabs {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
   background: rgba(0, 0, 0, 0.35);
   padding: 4px;
-  border-radius: 14px;
+  border-radius: 12px;
 }
 
 .mode-tab {
-  height: 38px;
+  height: 34px;
   border: none;
-  border-radius: 10px;
+  border-radius: 9px;
   background: transparent;
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.15s ease;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
 }
 
 .mode-tab.active {
   background: linear-gradient(135deg, #2563EB, #06B6D4);
   color: #FFFFFF;
-  box-shadow: 0 4px 12px rgba(6, 182, 212, 0.35);
+  box-shadow: 0 3px 10px rgba(6, 182, 212, 0.35);
+}
+
+.vault-tab {
+  color: #FDE047;
+}
+
+.vault-badge {
+  background: var(--neon-pink);
+  color: #FFFFFF;
+  font-size: 10px;
+  font-weight: 900;
+  padding: 1px 5px;
+  border-radius: 8px;
 }
 
 /* ==========================================
@@ -166,10 +292,11 @@ html, body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 8px;
-  margin-top: 10px;
-  padding-top: 10px;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
   border-top: 1px solid rgba(255, 255, 255, 0.12);
+  flex-wrap: wrap;
 }
 
 .shape-badge-wrap {
@@ -181,98 +308,92 @@ html, body {
 
 .shape-badge {
   color: var(--neon-amber);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .match-score-badge {
   background: rgba(0, 230, 118, 0.18);
   color: var(--neon-green);
   border: 1px solid rgba(0, 230, 118, 0.4);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
-  padding: 2px 7px;
-  border-radius: 10px;
+  padding: 2px 6px;
+  border-radius: 8px;
   white-space: nowrap;
 }
 
 .shape-action-btns {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
+}
+
+.btn-save-course {
+  background: linear-gradient(135deg, #F59E0B, #D97706);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  font-size: 11px;
+  font-weight: 800;
+  padding: 5px 9px;
+  border-radius: 9px;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
 .btn-icon-action {
   background: rgba(255, 255, 255, 0.1);
   color: #FFFFFF;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
-  padding: 6px 10px;
-  border-radius: 10px;
+  padding: 5px 9px;
+  border-radius: 9px;
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.15s ease;
-}
-
-.btn-icon-action:active {
-  transform: scale(0.95);
 }
 
 .btn-compare {
   background: linear-gradient(135deg, var(--neon-pink), #BE123C);
   color: #FFFFFF;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
-  padding: 6px 12px;
-  border-radius: 10px;
+  padding: 5px 10px;
+  border-radius: 9px;
   border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 4px 12px var(--neon-pink-glow);
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.15s ease;
 }
 
 .btn-compare.active {
   background: linear-gradient(135deg, #059669, #10B981);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
 }
 
-/* 도안 겹쳐보기 확장 컨트롤 (헤더 내부에서 아래로 펼쳐짐) */
 .argon-compare-panel {
-  margin-top: 10px;
-  background: rgba(0, 0, 0, 0.4);
-  border-radius: 14px;
-  padding: 10px 12px;
+  margin-top: 8px;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 12px;
+  padding: 9px 11px;
   border: 1px solid rgba(255, 0, 85, 0.35);
-  animation: slideDown 0.2s ease-out;
-}
-
-@keyframes slideDown {
-  from { opacity: 0; transform: translateY(-8px); }
-  to { opacity: 1; transform: translateY(0); }
 }
 
 .compare-tabs {
   display: flex;
-  gap: 6px;
-  margin-bottom: 10px;
+  gap: 5px;
+  margin-bottom: 8px;
 }
 
 .compare-tab {
   flex: 1;
-  height: 32px;
+  height: 28px;
   background-color: rgba(255, 255, 255, 0.06);
   color: var(--text-secondary);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  font-size: 12px;
+  border-radius: 7px;
+  font-size: 11px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.15s ease;
 }
 
 .compare-tab.active {
@@ -284,19 +405,19 @@ html, body {
 .compare-slider-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .compare-label {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: #CBD5E1;
-  width: 96px;
+  width: 90px;
 }
 
 .compare-slider {
   flex: 1;
-  height: 6px;
+  height: 5px;
   border-radius: 3px;
   background: #334155;
   outline: none;
@@ -305,46 +426,57 @@ html, body {
 }
 
 .compare-val {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
   color: var(--neon-cyan);
-  width: 38px;
+  width: 34px;
   text-align: right;
   font-family: monospace;
 }
 
 /* ==========================================
-   3. 우측 플로팅 퀵 액션 버튼 (시뮬레이션 / GPX / 내 위치)
+   3. 우측 플로팅 퀵 액션 버튼
    ========================================== */
 .floating-controls {
   position: absolute;
-  right: 12px;
-  bottom: 218px;
+  right: 10px;
+  bottom: 185px;
   z-index: 1000;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 8px;
+  gap: 6px;
+  transition: bottom 0.25s ease;
+}
+
+body.zen-mode .floating-controls {
+  bottom: 20px;
 }
 
 .fab-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  height: 40px;
-  padding: 0 14px;
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  font-size: 13px;
-  font-weight: 700;
+  gap: 5px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  font-size: 12px;
+  font-weight: 800;
   color: #FFFFFF;
   cursor: pointer;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
   transition: all 0.15s ease;
 }
 
 .fab-btn:active {
   transform: scale(0.95);
+}
+
+.fab-zen {
+  background: rgba(18, 20, 28, 0.9);
+  border-color: var(--neon-cyan);
+  color: var(--neon-cyan);
 }
 
 .fab-location {
@@ -357,12 +489,6 @@ html, body {
 
 .fab-sim.simulating {
   background: linear-gradient(135deg, #F59E0B, #D97706);
-  animation: pulseSim 1.2s infinite;
-}
-
-@keyframes pulseSim {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.6); }
-  50% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
 }
 
 .fab-gpx {
@@ -370,33 +496,40 @@ html, body {
 }
 
 /* ==========================================
-   4. 하단 Argon 텔레메트리 HUD & 컨트롤 독
+   4. 하단 Argon 텔레메트리 HUD & 컨트롤 독 (컴팩트화 + 자동 숨김 지원)
    ========================================== */
 .bottom-panel {
   position: absolute;
-  bottom: 12px;
-  left: 12px;
-  right: 12px;
+  bottom: 10px;
+  left: 10px;
+  right: 10px;
   max-width: 560px;
   margin: 0 auto;
   z-index: 1000;
   background: var(--glass-bg);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
-  border-radius: 24px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
-  padding: 14px 16px;
+  border-radius: 20px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.65);
+  padding: 10px 12px;
   border: 1px solid var(--glass-border);
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+body.zen-mode .bottom-panel {
+  transform: translateY(130%);
+  opacity: 0;
+  pointer-events: none;
 }
 
 .telemetry-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  gap: 6px;
   background: rgba(0, 0, 0, 0.35);
-  border-radius: 14px;
-  padding: 8px 10px;
-  margin-bottom: 10px;
+  border-radius: 12px;
+  padding: 6px 8px;
+  margin-bottom: 8px;
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
@@ -407,55 +540,60 @@ html, body {
 }
 
 .telemetry-label {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
   color: var(--text-secondary);
-  text-transform: uppercase;
-  margin-bottom: 2px;
+  margin-bottom: 1px;
 }
 
 .telemetry-value {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 800;
   color: #FFFFFF;
   font-family: monospace;
 }
 
 .telemetry-value small {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--neon-cyan);
-  font-weight: 700;
 }
 
 .status-bar {
-  text-align: center;
-  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 0 4px;
 }
 
 .status-text {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 700;
   color: #FFFFFF;
-  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .coords-text {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-secondary);
   font-family: monospace;
+  white-space: nowrap;
 }
 
 .button-group {
   display: flex;
-  gap: 8px;
+  gap: 6px;
 }
 
 .btn-argon {
   flex: 1;
-  height: 50px;
+  height: 42px;
   border: none;
-  border-radius: 14px;
-  font-size: 15px;
+  border-radius: 12px;
+  font-size: 13px;
   font-weight: 800;
   color: #FFFFFF;
   cursor: pointer;
@@ -477,12 +615,10 @@ html, body {
 
 .btn-start {
   background: linear-gradient(135deg, #00C853, #009624);
-  box-shadow: 0 4px 15px rgba(0, 200, 83, 0.35);
 }
 
 .btn-stop {
   background: linear-gradient(135deg, #FF1744, #D50000);
-  box-shadow: 0 4px 15px rgba(255, 23, 68, 0.35);
 }
 
 .btn-clear {
@@ -490,7 +626,7 @@ html, body {
 }
 
 /* ==========================================
-   5. 도형 스튜디오 모달 (실시간 SVG 프리뷰 + 그리드)
+   5. 도형 스튜디오 모달 & 나만의 코스 보관함 모달
    ========================================== */
 .modal-overlay {
   position: fixed;
@@ -504,61 +640,56 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
+  padding: 14px;
 }
 
 .modal-dialog {
   background: #161923;
   width: 100%;
   max-width: 420px;
-  border-radius: 24px;
-  padding: 20px;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 22px;
+  padding: 18px;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.75);
   border: 1px solid rgba(255, 255, 255, 0.14);
-  animation: modalFadeIn 0.2s ease-out;
-}
-
-@keyframes modalFadeIn {
-  from { opacity: 0; transform: scale(0.94); }
-  to { opacity: 1; transform: scale(1); }
 }
 
 .modal-header {
   text-align: center;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
 .modal-header span {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 800;
   color: #FFFFFF;
 }
 
 .modal-subtitle {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-secondary);
-  margin-top: 4px;
+  margin-top: 3px;
 }
 
-/* 실시간 도안 SVG 프리뷰 스테이지 */
 .shape-preview-stage {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   background: radial-gradient(circle at center, #222638 0%, #11131C 100%);
   border: 1px solid rgba(255, 0, 85, 0.35);
-  border-radius: 16px;
-  padding: 12px;
-  margin-bottom: 14px;
+  border-radius: 14px;
+  padding: 10px;
+  margin-bottom: 12px;
 }
 
 .preview-svg {
-  width: 84px;
-  height: 84px;
+  width: 76px;
+  height: 76px;
   flex-shrink: 0;
   background: rgba(0, 0, 0, 0.35);
-  border-radius: 12px;
-  padding: 6px;
+  border-radius: 10px;
+  padding: 5px;
 }
 
 #shapePreviewPolygon {
@@ -578,24 +709,23 @@ html, body {
 }
 
 .preview-title {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 800;
   color: #FFFFFF;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 
 .preview-desc {
-  font-size: 12px;
+  font-size: 11px;
   color: #CBD5E1;
-  line-height: 1.4;
+  line-height: 1.35;
 }
 
-/* 10종 도형 그리드 카드 */
 .shape-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 6px;
-  margin-bottom: 16px;
+  gap: 5px;
+  margin-bottom: 14px;
 }
 
 .shape-card {
@@ -603,19 +733,18 @@ html, body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  height: 58px;
+  gap: 3px;
+  height: 54px;
   background: #212534;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
+  border-radius: 11px;
   color: #CBD5E1;
-  font-size: 18px;
+  font-size: 17px;
   cursor: pointer;
-  transition: all 0.15s ease;
 }
 
 .shape-card span {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
 }
 
@@ -623,26 +752,24 @@ html, body {
   background: linear-gradient(135deg, rgba(255, 0, 85, 0.28), rgba(121, 40, 202, 0.35));
   border-color: var(--neon-pink);
   color: #FFFFFF;
-  box-shadow: 0 0 14px rgba(255, 0, 85, 0.35);
-  transform: translateY(-2px);
 }
 
 .slider-control-box {
   background: rgba(0, 0, 0, 0.3);
-  border-radius: 14px;
-  padding: 12px;
-  margin-bottom: 16px;
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
 }
 
 .slider-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .distance-label {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 800;
   color: #FFFFFF;
 }
@@ -652,8 +779,8 @@ html, body {
   font-weight: 700;
   color: var(--neon-cyan);
   background: rgba(0, 240, 255, 0.12);
-  padding: 3px 8px;
-  border-radius: 8px;
+  padding: 2px 7px;
+  border-radius: 7px;
 }
 
 .distance-slider {
@@ -671,7 +798,123 @@ html, body {
   justify-content: space-between;
   font-size: 10px;
   color: var(--text-secondary);
-  margin-top: 6px;
+  margin-top: 5px;
+}
+
+/* ==========================================
+   5-1. 코스 보관함 (Vault) 스타일
+   ========================================== */
+.vault-save-box {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.vault-input {
+  flex: 1;
+  height: 40px;
+  background: #0F121A;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  padding: 0 12px;
+  color: #FFFFFF;
+  font-size: 13px;
+  outline: none;
+}
+
+.vault-input:focus {
+  border-color: var(--neon-cyan);
+}
+
+.btn-vault-save {
+  height: 40px;
+  padding: 0 14px;
+  background: linear-gradient(135deg, #F59E0B, #D97706);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.vault-list {
+  max-height: 280px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.vault-empty {
+  text-align: center;
+  padding: 28px 12px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.6;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 12px;
+}
+
+.vault-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: #212534;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.vault-item-info {
+  flex: 1;
+  overflow: hidden;
+}
+
+.vault-item-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #FFFFFF;
+  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vault-item-meta {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.vault-item-actions {
+  display: flex;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.btn-vault-load {
+  background: linear-gradient(135deg, #2563EB, #06B6D4);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.btn-vault-del {
+  background: rgba(255, 23, 68, 0.18);
+  color: #FF8A80;
+  border: 1px solid rgba(255, 23, 68, 0.35);
+  border-radius: 8px;
+  padding: 6px 9px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
 }
 
 .modal-message {
@@ -685,18 +928,17 @@ html, body {
 
 .modal-footer {
   display: flex;
-  gap: 10px;
+  gap: 8px;
 }
 
 .btn-modal {
   flex: 1;
-  height: 46px;
+  height: 44px;
   border: none;
   border-radius: 12px;
   font-size: 14px;
   font-weight: 800;
   cursor: pointer;
-  transition: all 0.15s ease;
 }
 
 .btn-cancel {
@@ -707,7 +949,6 @@ html, body {
 .btn-confirm {
   background: linear-gradient(135deg, var(--neon-pink), #7928CA);
   color: #FFFFFF;
-  box-shadow: 0 4px 15px var(--neon-pink-glow);
 }
 
 /* ==========================================
@@ -724,8 +965,13 @@ html, body {
 }
 
 .leaflet-bottom.leaflet-left {
-  bottom: 215px;
-  left: 12px;
+  bottom: 185px;
+  left: 10px;
+  transition: bottom 0.25s ease;
+}
+
+body.zen-mode .leaflet-bottom.leaflet-left {
+  bottom: 20px;
 }
 
 .gps-pulse-marker {
@@ -773,7 +1019,6 @@ html, body {
   50% { transform: translateY(-4px); }
 }
 
-/* 경유지 순서 번호 뱃지 마커 */
 .waypoint-num-badge {
   width: 20px;
   height: 20px;

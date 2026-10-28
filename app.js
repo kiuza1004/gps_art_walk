@@ -1,33 +1,21 @@
 /**
  * GPS Art Walk — Argon Edition
- * High-Performance Pedestrian GPS Art Studio & Telemetry Engine
- * Cost: $0 (100% Free Open-Source Stack: Leaflet 1.9.4 + OSM/Carto Tiles + OSM Routed-Foot)
+ * Full-Screen Zen Map Mode + Saved Course Vault + Zero-Flicker Theme Switcher
+ * Cost: $0 (100% Free Open-Source Stack)
  */
 
-// --- 1. 상수 및 도형 카탈로그 정의 ---
+// --- 1. 상수 및 10종 도형 카탈로그 ---
 const Mode = {
   FREE_DRAW: 'FREE_DRAW',
   FOLLOW_ROUTE: 'FOLLOW_ROUTE'
 };
 
-const TILE_THEMES = {
-  osm: {
-    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    attribution: '&copy; OpenStreetMap contributors'
-  },
-  light: {
-    url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-    attribution: '&copy; OpenStreetMap &copy; CARTO'
-  },
-  dark: {
-    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    attribution: '&copy; OpenStreetMap contributors'
-  }
-};
+const VAULT_STORAGE_KEY = 'gps_art_saved_vault_v1';
 
 const SHAPE_CATALOG = [
   {
     id: 0,
+    icon: '🐶',
     name: '강아지',
     title: '🐶 스코티시 테리어 (강아지)',
     desc: '쫑긋 솟은 삼각형 귀와 45도 당근형 꼬리, 각진 주둥이가 특징인 아가타 스타일 실루엣',
@@ -36,6 +24,7 @@ const SHAPE_CATALOG = [
   },
   {
     id: 1,
+    icon: '🐱',
     name: '고양이',
     title: '🐱 길고양이 스탠딩 (고양이)',
     desc: '유연하게 말아 올린 꼬리와 뾰족한 두 귀가 살아있는 고양이 측면 실루엣',
@@ -44,6 +33,7 @@ const SHAPE_CATALOG = [
   },
   {
     id: 2,
+    icon: '🦖',
     name: '공룡',
     title: '🦖 티라노사우루스 (공룡)',
     desc: '긴 꼬리와 강인한 턱, 짧은 앞발의 특징을 살린 다이내믹 공룡 코스',
@@ -52,6 +42,7 @@ const SHAPE_CATALOG = [
   },
   {
     id: 3,
+    icon: '🐦',
     name: '새',
     title: '🐦 비상하는 파랑새 (새)',
     desc: '활짝 편 날개와 날렵한 부리, 꼬리깃을 형상화한 대칭형 비행 실루엣',
@@ -60,6 +51,7 @@ const SHAPE_CATALOG = [
   },
   {
     id: 4,
+    icon: '❤️',
     name: '하트',
     title: '❤️ 클래식 하트 (하트)',
     desc: '수학적 하트 파라메트릭 곡선으로 설계된 커플 산책 및 기념일 인기 코스',
@@ -77,6 +69,7 @@ const SHAPE_CATALOG = [
   },
   {
     id: 5,
+    icon: '⭐',
     name: '별',
     title: '⭐ 다섯 꼭짓점 스타 (별)',
     desc: '도시의 대각선 길과 골목을 활용해 선명한 별 모양을 완성하는 시그니처 코스',
@@ -93,6 +86,7 @@ const SHAPE_CATALOG = [
   },
   {
     id: 6,
+    icon: '🚗',
     name: '자동차',
     title: '🚗 클래식 쿠페 (자동차)',
     desc: '격자형 도시 블록과 가장 높은 일치율을 보이는 반듯한 자동차 측면 실루엣',
@@ -101,6 +95,7 @@ const SHAPE_CATALOG = [
   },
   {
     id: 7,
+    icon: '🐟',
     name: '물고기',
     title: '🐟 황금 잉어 (물고기)',
     desc: '유선형 몸통과 지느러미, 꼬리가 조화를 이루는 수변 공원 추천 코스',
@@ -109,6 +104,7 @@ const SHAPE_CATALOG = [
   },
   {
     id: 8,
+    icon: '🏠',
     name: '집',
     title: '🏠 스위트 홈 (집)',
     desc: '박공지붕과 반듯한 벽면으로 구성되어 아파트 단지 주변에서 걷기 좋은 코스',
@@ -117,6 +113,7 @@ const SHAPE_CATALOG = [
   },
   {
     id: 9,
+    icon: '👑',
     name: '왕관',
     title: '👑 로열 크라운 (왕관)',
     desc: '세 개의 솟은 봉우리가 인상적인 러닝 챌린지 왕관 코스',
@@ -128,26 +125,25 @@ const SHAPE_CATALOG = [
 // --- 2. 전역 상태 관리 ---
 let currentMode = Mode.FREE_DRAW;
 let isTracking = false;
+let isZenMode = false;
 let watchId = null;
 let isSnapping = false;
 
-// 코스 및 도형 상태
 let activeShapeType = 0;
 let activeMaxLengthKm = 2.5;
 let activeRotationDeg = 0;
 
-let trackPoints = [];      // 실제 걸은 GPS 좌표 [{lat, lng}]
-let guidePoints = [];      // 실제 도로 보행 코스 좌표 [{lat, lng}]
-let idealShapeCoords = []; // 원본 도안 외곽선 좌표 [{lat, lng}]
+let trackPoints = [];
+let guidePoints = [];
+let idealShapeCoords = [];
 
-// 텔레메트리 및 시뮬레이션 타이머
 let timerInterval = null;
 let startTimeMs = 0;
 let simInterval = null;
 
-// Leaflet 인스턴스 및 레이어들
+// Leaflet 객체
 let map = null;
-let currentTileLayer = null;
+let baseTileLayer = null;
 let trackCasingPolyline = null;
 let trackPolyline = null;
 let guideCasingPolyline = null;
@@ -160,12 +156,24 @@ let myLocationMarker = null;
 // --- 3. DOM 요소 참조 ---
 const mapContainer = document.getElementById('mapView');
 const spinnerMode = document.getElementById('spinnerMode');
-const modeTabBtns = document.querySelectorAll('.mode-tab');
+const modeTabBtns = document.querySelectorAll('.mode-tab[data-mode]');
 const themeBtns = document.querySelectorAll('.theme-btn');
 
+// 미니 HUD & Zen 모드 버튼
+const miniHudBar = document.getElementById('miniHudBar');
+const miniCourseTitle = document.getElementById('miniCourseTitle');
+const miniDistanceText = document.getElementById('miniDistanceText');
+const btnMiniQuickTrack = document.getElementById('btnMiniQuickTrack');
+const btnMiniOpenVault = document.getElementById('btnMiniOpenVault');
+const btnExpandUi = document.getElementById('btnExpandUi');
+const btnCollapseUi = document.getElementById('btnCollapseUi');
+const btnOnlyMapToggle = document.getElementById('btnOnlyMapToggle');
+
+// 코스 정보 & 도안 비교 바
 const shapeInfoBar = document.getElementById('shapeInfoBar');
 const tvCurrentShape = document.getElementById('tvCurrentShape');
 const tvMatchScore = document.getElementById('tvMatchScore');
+const btnSaveCourseQuick = document.getElementById('btnSaveCourseQuick');
 const btnRematchRoad = document.getElementById('btnRematchRoad');
 const btnToggleCompare = document.getElementById('btnToggleCompare');
 
@@ -190,7 +198,7 @@ const btnStart = document.getElementById('btnStart');
 const btnStop = document.getElementById('btnStop');
 const btnClear = document.getElementById('btnClear');
 
-// 스튜디오 모달 요소
+// 스튜디오 모달
 const autoShapeModal = document.getElementById('autoShapeModal');
 const shapeCards = document.querySelectorAll('.shape-card');
 const shapeSelect = document.getElementById('shapeSelect');
@@ -204,21 +212,31 @@ const seekBar = document.getElementById('seekBar');
 const btnShapeCancel = document.getElementById('btnShapeCancel');
 const btnShapeConfirm = document.getElementById('btnShapeConfirm');
 
+// 코스 보관함 (Vault) 모달
+const btnOpenVault = document.getElementById('btnOpenVault');
+const vaultCountBadge = document.getElementById('vaultCountBadge');
+const savedCoursesModal = document.getElementById('savedCoursesModal');
+const courseNameInput = document.getElementById('courseNameInput');
+const btnConfirmSaveCourse = document.getElementById('btnConfirmSaveCourse');
+const savedCoursesList = document.getElementById('savedCoursesList');
+const btnVaultClose = document.getElementById('btnVaultClose');
+
 const alertModal = document.getElementById('alertModal');
 const alertModalMessage = document.getElementById('alertModalMessage');
 const btnAlertClose = document.getElementById('btnAlertClose');
 
-// --- 4. 앱 초기화 ---
+// --- 4. 초기화 ---
 window.addEventListener('DOMContentLoaded', () => {
   initMap();
   initEvents();
   updateStudioPreview(0);
+  updateVaultBadgeCount();
   requestCurrentLocation(true);
   loadDrawingData();
 });
 
 function initMap() {
-  const defaultCenter = [37.5665, 126.9780]; // 서울 시청 기본 중심
+  const defaultCenter = [37.5665, 126.9780];
 
   map = L.map('mapView', {
     center: defaultCenter,
@@ -226,7 +244,12 @@ function initMap() {
     zoomControl: false
   });
 
-  // 기본 테마: 도로와 건물, 한글 지명이 가장 선명하게 보이는 일반 상세 지도(OSM)
+  // 단일 표준 OSM 타일 레이어를 영구 유지 (테마 변경 시 레이어를 지우지 않고 CSS 필터만 바꿔 타일 소실 원천 차단)
+  baseTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
   setMapTheme('osm');
 
   L.control.scale({
@@ -235,7 +258,6 @@ function initMap() {
     position: 'bottomleft'
   }).addTo(map);
 
-  // 모바일 및 브라우저 레이아웃 직후 지도 타일 빈 공간 방지
   setTimeout(() => {
     if (map) map.invalidateSize();
   }, 150);
@@ -245,26 +267,48 @@ function initMap() {
   });
 }
 
+// 타일 레이어 재로딩 없이 즉각 필터만 전환하여 지도가 지워지는 현상 100% 방지
 function setMapTheme(themeKey) {
-  const theme = TILE_THEMES[themeKey] || TILE_THEMES.osm;
-  if (currentTileLayer) {
-    map.removeLayer(currentTileLayer);
-  }
-  // 나이트 모드일 경우 고대비 나이트 필터 클래스 적용 (지명 및 골목길 시인성 100% 보존)
-  if (themeKey === 'dark') {
+  mapContainer.classList.remove('map-theme-light', 'map-theme-night');
+  if (themeKey === 'light') {
+    mapContainer.classList.add('map-theme-light');
+  } else if (themeKey === 'dark') {
     mapContainer.classList.add('map-theme-night');
-  } else {
-    mapContainer.classList.remove('map-theme-night');
   }
+}
 
-  currentTileLayer = L.tileLayer(theme.url, {
-    maxZoom: 19,
-    attribution: theme.attribution
-  }).addTo(map);
+// --- 5. 지도만 보기 모드 (Zen Mode) 제어 ---
+function setZenMode(enable) {
+  isZenMode = enable;
+  document.body.classList.toggle('zen-mode', enable);
+  miniHudBar.style.display = enable ? 'flex' : 'none';
+
+  if (btnOnlyMapToggle) {
+    btnOnlyMapToggle.innerHTML = enable ? '<span>⚙️ 메뉴 보기</span>' : '<span>🗺️ 지도만 보기</span>';
+  }
+  syncMiniHudInfo();
+}
+
+function syncMiniHudInfo() {
+  const courseName = shapeInfoBar.style.display !== 'none'
+    ? tvCurrentShape.textContent
+    : (currentMode === Mode.FOLLOW_ROUTE ? '밑그림 코스' : '자유 그리기');
+  miniCourseTitle.textContent = courseName;
+
+  const totalKm = calculatePathDistanceKm(trackPoints);
+  miniDistanceText.textContent = `${totalKm.toFixed(2)} km`;
+
+  if (isTracking) {
+    btnMiniQuickTrack.textContent = '⏹️ 정지';
+    btnMiniQuickTrack.classList.add('tracking');
+  } else {
+    btnMiniQuickTrack.textContent = '🚶 시작';
+    btnMiniQuickTrack.classList.remove('tracking');
+  }
 }
 
 function initEvents() {
-  // 지도 타일 테마 전환
+  // 지도 테마 전환 (일반 / 밝은배경 / 나이트)
   themeBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       themeBtns.forEach(b => b.classList.remove('active'));
@@ -273,7 +317,21 @@ function initEvents() {
     });
   });
 
-  // 상단 세그먼트 모드 탭 클릭
+  // 메뉴 접기 / 펼치기 (지도만 보기 모드)
+  btnCollapseUi.addEventListener('click', () => setZenMode(true));
+  btnExpandUi.addEventListener('click', () => setZenMode(false));
+  btnOnlyMapToggle.addEventListener('click', () => setZenMode(!isZenMode));
+
+  // 미니 바에서 바로 시작/정지
+  btnMiniQuickTrack.addEventListener('click', () => {
+    if (isTracking) {
+      stopTracking();
+    } else {
+      startTracking();
+    }
+  });
+
+  // 모드 탭 전환
   modeTabBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       if (isTracking) return;
@@ -287,7 +345,6 @@ function initEvents() {
     });
   });
 
-  // 하위 호환용 select 이벤트
   spinnerMode.addEventListener('change', (e) => {
     const val = e.target.value;
     if (val === 'AUTO_SHAPE') {
@@ -298,7 +355,7 @@ function initEvents() {
     }
   });
 
-  // 스튜디오 모달 내 10종 도형 카드 선택
+  // 도형 카드 선택
   shapeCards.forEach(card => {
     card.addEventListener('click', () => {
       const idx = parseInt(card.dataset.index, 10);
@@ -309,11 +366,11 @@ function initEvents() {
     });
   });
 
-  // 거리 슬라이더 조절
+  // 거리 슬라이더
   seekBar.addEventListener('input', (e) => {
     const km = (parseInt(e.target.value, 10) / 10).toFixed(1);
     tvDistance.textContent = `목표 외곽 둘레: ${km} km`;
-    const mins = Math.round(parseFloat(km) * 12); // 성인 보행 시속 5km 기준
+    const mins = Math.round(parseFloat(km) * 12);
     tvEstTime.textContent = `약 ${mins}분 소요`;
   });
 
@@ -333,20 +390,19 @@ function initEvents() {
     generateShape(activeShapeType, activeMaxLengthKm, activeRotationDeg);
   });
 
-  // 현재 지도 중심의 길로 즉시 재매칭
+  // 길 재매칭
   btnRematchRoad.addEventListener('click', () => {
     if (isTracking) stopTracking();
     generateShape(activeShapeType, activeMaxLengthKm, activeRotationDeg);
   });
 
-  // 도안 맞춰보기 토글
+  // 도안 비교 토글
   btnToggleCompare.addEventListener('click', () => {
     const isShowing = compareBar.style.display !== 'none';
     compareBar.style.display = isShowing ? 'none' : 'block';
     btnToggleCompare.classList.toggle('active', !isShowing);
   });
 
-  // 비교 뷰 전환 (실제 보행길만 / 1:1 겹쳐 비교 / 원본 도안만)
   compareTabs.forEach(tab => {
     tab.addEventListener('click', (e) => {
       compareTabs.forEach(t => t.classList.remove('active'));
@@ -355,7 +411,6 @@ function initEvents() {
     });
   });
 
-  // 도안 투명도 슬라이더
   compareOpacitySlider.addEventListener('input', (e) => {
     const val = parseInt(e.target.value, 10);
     compareOpacityVal.textContent = `${val}%`;
@@ -367,7 +422,6 @@ function initEvents() {
     }
   });
 
-  // 도안 회전 슬라이더 (동네 도로망 각도에 맞춰 회전 후 재매칭)
   shapeRotateSlider.addEventListener('change', (e) => {
     activeRotationDeg = parseInt(e.target.value, 10);
     shapeRotateVal.textContent = `${activeRotationDeg}°`;
@@ -377,11 +431,23 @@ function initEvents() {
     shapeRotateVal.textContent = `${e.target.value}°`;
   });
 
-  // 시뮬레이션 및 GPX 내보내기
+  // 코스 보관함 (Vault) 열기 / 저장
+  btnOpenVault.addEventListener('click', openVaultModal);
+  btnMiniOpenVault.addEventListener('click', openVaultModal);
+  btnSaveCourseQuick.addEventListener('click', () => {
+    openVaultModal();
+    courseNameInput.focus();
+  });
+  btnConfirmSaveCourse.addEventListener('click', saveCurrentCourseToVault);
+  btnVaultClose.addEventListener('click', () => {
+    savedCoursesModal.style.display = 'none';
+  });
+
+  // 시뮬레이션 및 GPX
   btnSimulate.addEventListener('click', toggleSimulation);
   btnExportGpx.addEventListener('click', exportCourseToGpx);
 
-  // 하단 컨트롤 버튼
+  // 하단 컨트롤
   btnStart.addEventListener('click', startTracking);
   btnStop.addEventListener('click', stopTracking);
   btnClear.addEventListener('click', () => {
@@ -415,13 +481,12 @@ function setActiveModeTab(modeVal) {
   });
 }
 
-// --- 5. 스튜디오 모달 실시간 SVG 도안 프리뷰 ---
+// --- 6. 스튜디오 모달 SVG 프리뷰 ---
 function updateStudioPreview(shapeIdx) {
   const item = SHAPE_CATALOG[shapeIdx] || SHAPE_CATALOG[0];
   previewShapeTitle.textContent = item.title;
   previewShapeDesc.textContent = item.desc;
 
-  // SVG 좌표계는 Y축이 아래쪽이므로 부호 반전하여 정확한 모양 표시
   const svgPoints = item.points.map(p => `${p[0].toFixed(3)},${(-p[1]).toFixed(3)}`).join(' ');
   shapePreviewPolygon.setAttribute('points', svgPoints);
 
@@ -429,14 +494,13 @@ function updateStudioPreview(shapeIdx) {
   shapePreviewStart.setAttribute('cx', String(startPt[0]));
   shapePreviewStart.setAttribute('cy', String(-startPt[1]));
 
-  // 권장 기본 거리 세팅
   const sliderVal = Math.round(item.idealKm * 10);
   seekBar.value = String(sliderVal);
   tvDistance.textContent = `목표 외곽 둘레: ${item.idealKm.toFixed(1)} km`;
   tvEstTime.textContent = `약 ${Math.round(item.idealKm * 12)}분 소요`;
 }
 
-// --- 6. 모드 전환 및 UI 상태 ---
+// --- 7. 모드 전환 ---
 function switchMode(newMode) {
   if (currentMode === newMode) return;
   stopSimulation();
@@ -453,12 +517,14 @@ function switchMode(newMode) {
     updateStatus('밑그림 모드 — 지도 위에 원하는 코스를 직접 그리세요');
   }
   updateButtonStates();
+  syncMiniHudInfo();
 }
 
 function updateButtonStates() {
   btnStart.disabled = isTracking;
   btnStop.disabled = !isTracking;
   modeTabBtns.forEach(btn => { btn.disabled = isTracking; });
+  syncMiniHudInfo();
 }
 
 function updateStatus(msg) {
@@ -470,7 +536,7 @@ function showAlert(msg) {
   alertModal.style.display = 'flex';
 }
 
-// --- 7. 내 위치 및 실시간 GPS 트래킹 + 텔레메트리 ---
+// --- 8. 내 위치 및 GPS 실시간 트래킹 ---
 function requestCurrentLocation(initial = false) {
   if (!navigator.geolocation) {
     if (!initial) showAlert('이 브라우저는 GPS 위치 기능을 지원하지 않습니다.');
@@ -483,13 +549,13 @@ function requestCurrentLocation(initial = false) {
       const latlng = [latitude, longitude];
       updateMyLocationMarker(latlng);
       map.setView(latlng, 16);
-      tvCoords.textContent = `LAT ${latitude.toFixed(6)} · LNG ${longitude.toFixed(6)}`;
+      tvCoords.textContent = `LAT ${latitude.toFixed(5)} · LNG ${longitude.toFixed(5)}`;
     },
     (err) => {
       if (!initial) {
         showAlert(`현재 위치를 가져올 수 없습니다: ${err.message}`);
       } else {
-        tvCoords.textContent = '서울 시청 기준 (GPS 권한 허용 시 내 위치로 이동)';
+        tvCoords.textContent = '서울 시청 기준 (GPS 허용 시 내 위치 이동)';
       }
     },
     { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
@@ -523,6 +589,9 @@ function startTracking() {
   removeTrackPolyline();
   startTelemetryTimer();
 
+  // 기록 시작 시 자동으로 위아래 메뉴창을 접어 지도만 보며 걸을 수 있도록 전환
+  setZenMode(true);
+
   watchId = navigator.geolocation.watchPosition(
     (pos) => {
       const { latitude, longitude } = pos.coords;
@@ -533,7 +602,7 @@ function startTracking() {
       updateMyLocationMarker([latitude, longitude]);
       map.panTo([latitude, longitude]);
 
-      tvCoords.textContent = `LAT ${latitude.toFixed(6)} · LNG ${longitude.toFixed(6)}`;
+      tvCoords.textContent = `LAT ${latitude.toFixed(5)} · LNG ${longitude.toFixed(5)}`;
       updateTelemetryStats();
     },
     (err) => {
@@ -544,7 +613,7 @@ function startTracking() {
   );
 
   removeDrawingListeners();
-  updateStatus('🚶 실시간 GPS 아트 기록 중... 코스를 따라 걸으세요');
+  updateStatus('🚶 실시간 GPS 아트 기록 중...');
   updateButtonStates();
 }
 
@@ -562,7 +631,7 @@ function stopTracking() {
   saveDrawingData();
 }
 
-// --- 8. 텔레메트리(거리/시간/칼로리) 계산 엔진 ---
+// --- 9. 텔레메트리 계산 ---
 function startTelemetryTimer() {
   stopTelemetryTimer();
   startTimeMs = Date.now();
@@ -586,13 +655,15 @@ function resetTelemetry() {
   statDistance.innerHTML = '0.00 <small>km</small>';
   statDuration.textContent = '00:00';
   statCalories.innerHTML = '0 <small>kcal</small>';
+  syncMiniHudInfo();
 }
 
 function updateTelemetryStats() {
   const totalKm = calculatePathDistanceKm(trackPoints);
-  const kcal = Math.round(totalKm * 55); // 평균 성인 1km 보행 시 약 55kcal 소모
+  const kcal = Math.round(totalKm * 55);
   statDistance.innerHTML = `${totalKm.toFixed(2)} <small>km</small>`;
   statCalories.innerHTML = `${kcal} <small>kcal</small>`;
+  syncMiniHudInfo();
   if (trackPoints.length >= 2) {
     btnExportGpx.style.display = 'flex';
   }
@@ -616,14 +687,13 @@ function calculatePathDistanceKm(pts) {
   return sum;
 }
 
-// --- 9. 이중 스트로크(Double-Stroke Halo) 폴리라인 & 경유지 렌더링 ---
+// --- 10. 폴리라인 & 마커 렌더링 ---
 function updateTrackPolyline() {
   removeTrackPolyline();
   if (trackPoints.length < 2) return;
 
   const latlngs = trackPoints.map(p => [p.lat, p.lng]);
 
-  // 외곽 다크 글로우 케이싱
   trackCasingPolyline = L.polyline(latlngs, {
     color: '#002B36',
     weight: 12,
@@ -632,7 +702,6 @@ function updateTrackPolyline() {
     lineJoin: 'round'
   }).addTo(map);
 
-  // 코어 네온 시안 라인
   trackPolyline = L.polyline(latlngs, {
     color: '#00F0FF',
     weight: 6,
@@ -660,7 +729,6 @@ function updateGuidePolyline(isAutoShape = false, idealPoints = null) {
   const latlngs = guidePoints.map(p => [p.lat, p.lng]);
 
   if (isAutoShape) {
-    // 1. 원본 의도 도안 실루엣 폴리곤 (1:1 비교 및 배경 가이드)
     if (idealPoints && idealPoints.length >= 3) {
       const idealLatLngs = idealPoints.map(p => [p.lat, p.lng]);
       const currentOpacity = parseInt(compareOpacitySlider.value, 10) / 100;
@@ -674,7 +742,6 @@ function updateGuidePolyline(isAutoShape = false, idealPoints = null) {
       }).addTo(map);
     }
 
-    // 2. 실제 보행 도로 외곽 다크 글로우 케이싱 (어떤 지도에서도 선명하게 분리)
     guideCasingPolyline = L.polyline(latlngs, {
       color: '#1A000D',
       weight: 11,
@@ -683,7 +750,6 @@ function updateGuidePolyline(isAutoShape = false, idealPoints = null) {
       lineJoin: 'round'
     }).addTo(map);
 
-    // 3. 실제 보행 도로 메인 네온 핫핑크 실선
     guidePolyline = L.polyline(latlngs, {
       color: '#FF0055',
       weight: 6,
@@ -692,7 +758,6 @@ function updateGuidePolyline(isAutoShape = false, idealPoints = null) {
       lineJoin: 'round'
     }).addTo(map);
 
-    // 4. 출발점 마커 및 진행 순서 웨이포인트 번호 마커(1~5) 배치
     const startPoint = latlngs[0];
     const flagIcon = L.divIcon({
       className: 'start-flag-marker',
@@ -704,12 +769,10 @@ function updateGuidePolyline(isAutoShape = false, idealPoints = null) {
 
     renderWaypointDirectionBadges(latlngs);
 
-    // 코스 전체가 한눈에 들어오도록 지도 화면 맞춤
-    map.fitBounds(guidePolyline.getBounds().pad(0.22));
+    map.fitBounds(guidePolyline.getBounds().pad(0.18));
     btnSimulate.style.display = 'flex';
     btnExportGpx.style.display = 'flex';
   } else {
-    // 수동 밑그림용 네온 라인
     guidePolyline = L.polyline(latlngs, {
       color: '#FF0055',
       weight: 6,
@@ -724,6 +787,7 @@ function updateGuidePolyline(isAutoShape = false, idealPoints = null) {
       btnExportGpx.style.display = 'flex';
     }
   }
+  syncMiniHudInfo();
 }
 
 function renderWaypointDirectionBadges(latlngs) {
@@ -765,7 +829,7 @@ function removeGuidePolyline() {
   waypointMarkers = [];
 }
 
-// --- 10. 수동 밑그림 그리기 & 보행 도로 스냅 ---
+// --- 11. 수동 밑그림 & 보행 도로 스냅 ---
 let isDrawing = false;
 let strokeStartIndex = 0;
 let lastDrawX = 0;
@@ -857,7 +921,11 @@ function snapStrokeToPedestrianRoad(startIndex) {
           guidePoints.splice(startIndex, guidePoints.length - startIndex, ...snapped);
           updateGuidePolyline(false);
           const distKm = calculatePathDistanceKm(guidePoints).toFixed(2);
-          updateStatus(`실제 보행길 스냅 완료 (총 ${distKm}km) — 시작을 눌러 걸으세요`);
+          tvCurrentShape.textContent = `직접 그린 코스 (${distKm}km)`;
+          tvMatchScore.textContent = '보행길 스냅';
+          shapeInfoBar.style.display = 'flex';
+          updateStatus(`실제 보행길 스냅 완료 (${distKm}km) — [💾 코스 저장]이 가능합니다`);
+          saveDrawingData();
           return;
         }
       }
@@ -869,7 +937,7 @@ function snapStrokeToPedestrianRoad(startIndex) {
     });
 }
 
-// --- 11. 자동 도형 보행길 코스 생성 엔진 (회전 변환 + 일치율 산출) ---
+// --- 12. 자동 도형 코스 생성 ---
 function showAutoShapeDialog() {
   updateStudioPreview(parseInt(shapeSelect.value, 10) || 0);
   autoShapeModal.style.display = 'flex';
@@ -938,10 +1006,8 @@ function generateShape(shapeType, maxLengthKm, rotationDeg = 0) {
   const item = SHAPE_CATALOG[shapeType] || SHAPE_CATALOG[0];
   const center = map.getCenter();
 
-  // 회전 변환 적용
   const rotatedBasePoints = item.points.map(p => rotatePoint(p[0], p[1], rotationDeg));
 
-  // 둘레 길이 계산 및 스케일 산출
   let totalLengthRaw = 0;
   for (let i = 0; i < rotatedBasePoints.length - 1; i++) {
     const dx = rotatedBasePoints[i + 1][0] - rotatedBasePoints[i][0];
@@ -950,14 +1016,12 @@ function generateShape(shapeType, maxLengthKm, rotationDeg = 0) {
   }
   const scale = totalLengthRaw > 0 ? maxLengthKm / totalLengthRaw : 1.0;
 
-  // 핵심 앵커 정점 위경도 투영
   const anchorPoints = rotatedBasePoints.map(p => {
     const dLat = (p[1] * scale) / 111.32;
     const dLon = (p[0] * scale) / (111.32 * Math.cos(center.lat * Math.PI / 180));
     return { lat: center.lat + dLat, lng: center.lng + dLon };
   });
 
-  // 원본 의도 도안 고밀도 실루엣 투영
   const rawPoints = interpolateShape(rotatedBasePoints, 48);
   idealShapeCoords = rawPoints.map(p => {
     const dLat = (p[1] * scale) / 111.32;
@@ -967,7 +1031,6 @@ function generateShape(shapeType, maxLengthKm, rotationDeg = 0) {
 
   updateStatus(`⚡ [${item.name}] 도안을 주변 실제 보행 도로망에 매칭 중...`);
 
-  // 정점이 너무 많으면 URL 길이 제한에 걸릴 수 있으므로 최대 20개 핵심 정점으로 압축
   let routingAnchors = anchorPoints;
   if (anchorPoints.length > 20) {
     routingAnchors = [];
@@ -995,10 +1058,11 @@ function generateShape(shapeType, maxLengthKm, rotationDeg = 0) {
           const distanceKm = (route.distance / 1000).toFixed(2);
           const matchScore = computeShapeMatchScore(anchorPoints, data.waypoints, maxLengthKm);
 
-          tvCurrentShape.textContent = `${item.name} 코스 (${distanceKm}km · 도보)`;
-          tvMatchScore.textContent = `도안 일치도 ${matchScore}%`;
+          tvCurrentShape.textContent = `${item.icon} ${item.name} (${distanceKm}km)`;
+          tvMatchScore.textContent = `일치도 ${matchScore}%`;
           shapeInfoBar.style.display = 'flex';
-          updateStatus(`✅ 실제 보행길 코스 완성! 🚩 출발점에서 번호 순서(1→4)대로 걸으세요`);
+          updateStatus(`✅ 코스 완성! [💾 코스 저장] 또는 [🗺️ 지도만 보기]로 걸으세요`);
+          syncMiniHudInfo();
           saveDrawingData();
           return;
         }
@@ -1012,15 +1076,15 @@ function generateShape(shapeType, maxLengthKm, rotationDeg = 0) {
   function fallbackToOutline() {
     guidePoints = idealShapeCoords;
     updateGuidePolyline(true, idealShapeCoords);
-    tvCurrentShape.textContent = `${item.name} 외곽 코스 (${maxLengthKm.toFixed(1)}km)`;
-    tvMatchScore.textContent = `원본 도안 100%`;
+    tvCurrentShape.textContent = `${item.icon} ${item.name} (${maxLengthKm.toFixed(1)}km)`;
+    tvMatchScore.textContent = `원본 100%`;
     shapeInfoBar.style.display = 'flex';
     updateStatus(`외곽 코스 생성 완료 — 🚩 출발점에서 시작하세요`);
+    syncMiniHudInfo();
     saveDrawingData();
   }
 }
 
-// 원본 도안 정점과 스냅된 실제 도로 간의 거리 오차를 기반으로 형태 일치율(%) 산출
 function computeShapeMatchScore(anchors, waypoints, targetKm) {
   if (!waypoints || waypoints.length === 0) return 90;
   let totalSnapDistMeters = 0;
@@ -1034,7 +1098,7 @@ function computeShapeMatchScore(anchors, waypoints, targetKm) {
   return Math.min(99, Math.max(75, score));
 }
 
-// --- 12. 도안 1:1 맞춰보기 뷰 컨트롤 ---
+// --- 13. 도안 비교 뷰 ---
 function applyCompareView(view) {
   const currentOpacity = parseInt(compareOpacitySlider.value, 10) / 100;
 
@@ -1056,7 +1120,154 @@ function applyCompareView(view) {
   }
 }
 
-// --- 13. 가상 걷기 시뮬레이터 (밖에 나가지 않고 코스 완주 검증) ---
+// --- 14. 나만의 코스 보관함 (별도 저장 및 불러오기) ---
+function getSavedVaultCourses() {
+  try {
+    const raw = localStorage.getItem(VAULT_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function setSavedVaultCourses(list) {
+  localStorage.setItem(VAULT_STORAGE_KEY, JSON.stringify(list));
+  updateVaultBadgeCount();
+}
+
+function updateVaultBadgeCount() {
+  const list = getSavedVaultCourses();
+  if (vaultCountBadge) {
+    vaultCountBadge.textContent = String(list.length);
+  }
+}
+
+function openVaultModal() {
+  // 기본 추천 이름 자동 입력
+  if (guidePoints.length >= 2) {
+    const item = SHAPE_CATALOG[activeShapeType] || SHAPE_CATALOG[0];
+    const distKm = calculatePathDistanceKm(guidePoints).toFixed(1);
+    const now = new Date();
+    const dateStr = `${now.getMonth() + 1}/${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    courseNameInput.value = `${item.icon} ${item.name} 코스 (${distKm}km) - ${dateStr}`;
+  } else {
+    courseNameInput.value = '';
+  }
+
+  renderVaultList();
+  savedCoursesModal.style.display = 'flex';
+}
+
+function saveCurrentCourseToVault() {
+  if (guidePoints.length < 2 && trackPoints.length < 2) {
+    showAlert('저장할 코스가 없습니다. 먼저 도형 코스를 생성하거나 밑그림을 그려주세요.');
+    return;
+  }
+
+  const item = SHAPE_CATALOG[activeShapeType] || SHAPE_CATALOG[0];
+  const ptsToSave = guidePoints.length >= 2 ? guidePoints : trackPoints;
+  const distKm = calculatePathDistanceKm(ptsToSave).toFixed(2);
+  const customName = courseNameInput.value.trim() || `${item.icon} ${item.name} 코스 (${distKm}km)`;
+
+  const newEntry = {
+    id: 'course_' + Date.now(),
+    title: customName,
+    shapeType: activeShapeType,
+    maxLengthKm: activeMaxLengthKm,
+    rotationDeg: activeRotationDeg,
+    distanceKm: distKm,
+    matchText: tvMatchScore.textContent || '보관됨',
+    createdAt: new Date().toLocaleString('ko-KR'),
+    guidePoints: ptsToSave,
+    idealShapeCoords: idealShapeCoords
+  };
+
+  const list = getSavedVaultCourses();
+  list.unshift(newEntry);
+  setSavedVaultCourses(list);
+  renderVaultList();
+  updateStatus(`💾 [${customName}] 코스가 보관함에 저장되었습니다!`);
+}
+
+function renderVaultList() {
+  const list = getSavedVaultCourses();
+  savedCoursesList.innerHTML = '';
+
+  if (list.length === 0) {
+    savedCoursesList.innerHTML = '<div class="vault-empty">아직 저장된 코스가 없습니다.<br>마음에 드는 코스가 나왔을 때 [💾 현재 코스 저장]을 눌러 보관해 두세요!</div>';
+    return;
+  }
+
+  list.forEach(course => {
+    const row = document.createElement('div');
+    row.className = 'vault-item';
+    row.innerHTML = `
+      <div class="vault-item-info">
+        <div class="vault-item-title">${escapeHtml(course.title)}</div>
+        <div class="vault-item-meta">총 ${course.distanceKm}km · ${course.matchText || ''} · ${course.createdAt}</div>
+      </div>
+      <div class="vault-item-actions">
+        <button type="button" class="btn-vault-load" data-id="${course.id}">📍 불러오기</button>
+        <button type="button" class="btn-vault-del" data-id="${course.id}">🗑️</button>
+      </div>
+    `;
+
+    row.querySelector('.btn-vault-load').addEventListener('click', () => {
+      loadCourseFromVault(course.id);
+    });
+    row.querySelector('.btn-vault-del').addEventListener('click', () => {
+      deleteCourseFromVault(course.id);
+    });
+
+    savedCoursesList.appendChild(row);
+  });
+}
+
+function loadCourseFromVault(courseId) {
+  const list = getSavedVaultCourses();
+  const found = list.find(c => c.id === courseId);
+  if (!found) return;
+
+  stopSimulation();
+  if (isTracking) stopTracking();
+
+  activeShapeType = typeof found.shapeType === 'number' ? found.shapeType : 0;
+  activeMaxLengthKm = found.maxLengthKm || 2.5;
+  activeRotationDeg = found.rotationDeg || 0;
+
+  guidePoints = Array.isArray(found.guidePoints) ? found.guidePoints : [];
+  idealShapeCoords = Array.isArray(found.idealShapeCoords) ? found.idealShapeCoords : [];
+
+  updateGuidePolyline(true, idealShapeCoords);
+
+  tvCurrentShape.textContent = found.title;
+  tvMatchScore.textContent = found.matchText || '보관 코스';
+  shapeInfoBar.style.display = 'flex';
+  savedCoursesModal.style.display = 'none';
+
+  // 코스를 불러온 뒤 지도만 보며 바로 걸을 수 있도록 안내
+  syncMiniHudInfo();
+  saveDrawingData();
+  updateStatus(`📂 [${found.title}] 코스를 불러왔습니다!`);
+}
+
+function deleteCourseFromVault(courseId) {
+  const list = getSavedVaultCourses().filter(c => c.id !== courseId);
+  setSavedVaultCourses(list);
+  renderVaultList();
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// --- 15. 가상 걷기 시뮬레이터 ---
 function toggleSimulation() {
   if (simInterval) {
     stopSimulation();
@@ -1064,7 +1275,7 @@ function toggleSimulation() {
     return;
   }
   if (guidePoints.length < 2) {
-    showAlert('먼저 도형 코스를 생성하거나 밑그림을 그려주세요.');
+    showAlert('먼저 도형 코스를 생성하거나 보관함에서 불러와 주세요.');
     return;
   }
 
@@ -1074,9 +1285,12 @@ function toggleSimulation() {
   resetTelemetry();
   startTelemetryTimer();
 
+  // 시뮬레이션 시에도 위아래 메뉴창을 접어 전체 화면 지도로 감상
+  setZenMode(true);
+
   btnSimulate.classList.add('simulating');
-  btnSimulate.innerHTML = '<span>⏹️ 시뮬레이션 중지</span>';
-  updateStatus('🏃 가상 보행 시뮬레이션 진행 중 — 실제 길을 따라 아트가 그려집니다');
+  btnSimulate.innerHTML = '<span>⏹️ 정지</span>';
+  updateStatus('🏃 가상 보행 시뮬레이션 진행 중...');
 
   let idx = 0;
   const total = guidePoints.length;
@@ -1088,7 +1302,7 @@ function toggleSimulation() {
       updateTrackPolyline();
       updateTelemetryStats();
       stopSimulation();
-      updateStatus('🎉 코스 완주 시뮬레이션 완료! 실제 길 위에서 완벽히 검증되었습니다');
+      updateStatus('🎉 코스 완주 시뮬레이션 완료!');
       return;
     }
 
@@ -1096,7 +1310,7 @@ function toggleSimulation() {
     trackPoints.push(pt);
     updateTrackPolyline();
     updateMyLocationMarker([pt.lat, pt.lng]);
-    tvCoords.textContent = `SIM LAT ${pt.lat.toFixed(6)} · LNG ${pt.lng.toFixed(6)}`;
+    tvCoords.textContent = `SIM LAT ${pt.lat.toFixed(5)} · LNG ${pt.lng.toFixed(5)}`;
     updateTelemetryStats();
     idx += stepCount;
   }, 60);
@@ -1109,10 +1323,10 @@ function stopSimulation() {
   }
   stopTelemetryTimer();
   btnSimulate.classList.remove('simulating');
-  btnSimulate.innerHTML = '<span>▶️ 코스 시뮬레이션</span>';
+  btnSimulate.innerHTML = '<span>▶️ 시뮬레이션</span>';
 }
 
-// --- 14. GPX 파일 내보내기 (스마트워치 / 스트라바 호환) ---
+// --- 16. GPX 내보내기 ---
 function exportCourseToGpx() {
   const pts = trackPoints.length >= 2 ? trackPoints : guidePoints;
   if (pts.length < 2) {
@@ -1149,7 +1363,7 @@ ${trkpts}
   URL.revokeObjectURL(url);
 }
 
-// --- 15. 초기화 및 로컬 스토리지 영속화 ---
+// --- 17. 초기화 및 로컬 데이터 복원 ---
 function clearAll() {
   trackPoints = [];
   guidePoints = [];
@@ -1164,6 +1378,7 @@ function clearAll() {
   btnToggleCompare.classList.remove('active');
   btnSimulate.style.display = 'none';
   btnExportGpx.style.display = 'none';
+  syncMiniHudInfo();
 }
 
 function saveDrawingData() {
@@ -1217,6 +1432,7 @@ function loadDrawingData() {
     currentMode = Mode.FREE_DRAW;
     setActiveModeTab(Mode.FREE_DRAW);
     removeDrawingListeners();
+    syncMiniHudInfo();
   } catch (e) {
     console.error('Failed to load drawing data:', e);
   }
