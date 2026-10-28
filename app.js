@@ -1022,20 +1022,16 @@ function generateShape(shapeType, maxLengthKm, rotationDeg = 0) {
     return { lat: center.lat + dLat, lng: center.lng + dLon };
   });
 
-  const rawPoints = interpolateShape(rotatedBasePoints, 48);
-  idealShapeCoords = rawPoints.map(p => {
-    const dLat = (p[1] * scale) / 111.32;
-    const dLon = (p[0] * scale) / (111.32 * Math.cos(center.lat * Math.PI / 180));
-    return { lat: center.lat + dLat, lng: center.lng + dLon };
-  });
+  // 원본 도안의 모든 꼭짓점을 손실 없이 그대로 보존
+  idealShapeCoords = anchorPoints.map(p => ({ lat: p.lat, lng: p.lng }));
 
   updateStatus(`⚡ [${item.name}] 도안을 주변 실제 보행 도로망에 매칭 중...`);
 
   let routingAnchors = anchorPoints;
-  if (anchorPoints.length > 20) {
+  if (anchorPoints.length > 45) {
     routingAnchors = [];
-    const step = (anchorPoints.length - 1) / 18;
-    for (let i = 0; i < 18; i++) {
+    const step = (anchorPoints.length - 1) / 40;
+    for (let i = 0; i < 40; i++) {
       routingAnchors.push(anchorPoints[Math.round(i * step)]);
     }
     routingAnchors.push(anchorPoints[anchorPoints.length - 1]);
@@ -1267,14 +1263,52 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
-// --- 15. 가상 걷기 시뮬레이터 ---
+// --- 15. 가상 걷기 시뮬레이터 (그려진 도안·코스의 모든 정점을 100% 오차 없이 추종) ---
+function buildSmoothSimulationPath(sourcePoints, targetFrames = 140) {
+  if (!sourcePoints || sourcePoints.length < 2) return sourcePoints || [];
+  // 원본 코스의 모든 꼭짓점을 100% 유지하면서 긴 직선 구간만 부드럽게 분할하여 정밀 추종 보장
+  const totalDist = calculatePathDistanceKm(sourcePoints);
+  if (totalDist <= 0) return sourcePoints.slice();
+
+  const stepDistKm = totalDist / targetFrames;
+  const dense = [sourcePoints[0]];
+
+  for (let i = 0; i < sourcePoints.length - 1; i++) {
+    const p1 = sourcePoints[i];
+    const p2 = sourcePoints[i + 1];
+    const segKm = haversineKm(p1, p2);
+
+    if (segKm > stepDistKm) {
+      const subSteps = Math.min(20, Math.floor(segKm / stepDistKm));
+      for (let s = 1; s <= subSteps; s++) {
+        const r = s / (subSteps + 1);
+        dense.push({
+          lat: p1.lat + (p2.lat - p1.lat) * r,
+          lng: p1.lng + (p2.lng - p1.lng) * r
+        });
+      }
+    }
+    // 원래 도안/코스의 정점을 절대 건너뛰지 않고 반드시 포함
+    dense.push(p2);
+  }
+  return dense;
+}
+
 function toggleSimulation() {
   if (simInterval) {
     stopSimulation();
     updateStatus('코스 시뮬레이션 종료');
     return;
   }
-  if (guidePoints.length < 2) {
+
+  // 현재 활성화된 비교 탭이 '원본 도안만(origin)'이면 원본 도안 외곽선을, 아니면 그려진 가이드 코스를 100% 동일하게 추종
+  const activeTab = document.querySelector('.compare-tab.active');
+  const isOriginOnlyView = activeTab && activeTab.dataset.view === 'origin';
+  const baseTargetPoints = (isOriginOnlyView && idealShapeCoords.length >= 2)
+    ? idealShapeCoords
+    : guidePoints;
+
+  if (baseTargetPoints.length < 2) {
     showAlert('먼저 도형 코스를 생성하거나 보관함에서 불러와 주세요.');
     return;
   }
@@ -1285,35 +1319,42 @@ function toggleSimulation() {
   resetTelemetry();
   startTelemetryTimer();
 
-  // 시뮬레이션 시에도 위아래 메뉴창을 접어 전체 화면 지도로 감상
+  // 시뮬레이션 시 위아래 메뉴창을 접어 전체 화면 지도로 감상
   setZenMode(true);
 
   btnSimulate.classList.add('simulating');
   btnSimulate.innerHTML = '<span>⏹️ 정지</span>';
   updateStatus('🏃 가상 보행 시뮬레이션 진행 중...');
 
-  let idx = 0;
-  const total = guidePoints.length;
-  const stepCount = Math.max(1, Math.floor(total / 80));
+  const simPath = buildSmoothSimulationPath(baseTargetPoints, 150);
+  const total = simPath.length;
+  const pointsPerTick = Math.max(1, Math.ceil(total / 120));
+
+  // 출발점(0번 정점)부터 즉시 시작하여 첫 구간 누락 방지
+  trackPoints.push(simPath[0]);
+  updateMyLocationMarker([simPath[0].lat, simPath[0].lng]);
+  let currentIdx = 1;
 
   simInterval = setInterval(() => {
-    if (idx >= total) {
-      trackPoints.push(guidePoints[total - 1]);
-      updateTrackPolyline();
-      updateTelemetryStats();
-      stopSimulation();
-      updateStatus('🎉 코스 완주 시뮬레이션 완료!');
-      return;
-    }
+    const nextIdx = Math.min(total - 1, currentIdx + pointsPerTick - 1);
 
-    const pt = guidePoints[idx];
-    trackPoints.push(pt);
+    // 중간 정점을 단 하나도 건너뛰지 않고 순서대로 모두 누적하여 그려진 도안과 100% 일치 보장
+    for (let i = currentIdx; i <= nextIdx; i++) {
+      trackPoints.push(simPath[i]);
+    }
+    currentIdx = nextIdx + 1;
+
+    const headPt = trackPoints[trackPoints.length - 1];
     updateTrackPolyline();
-    updateMyLocationMarker([pt.lat, pt.lng]);
-    tvCoords.textContent = `SIM LAT ${pt.lat.toFixed(5)} · LNG ${pt.lng.toFixed(5)}`;
+    updateMyLocationMarker([headPt.lat, headPt.lng]);
+    tvCoords.textContent = `SIM LAT ${headPt.lat.toFixed(5)} · LNG ${headPt.lng.toFixed(5)}`;
     updateTelemetryStats();
-    idx += stepCount;
-  }, 60);
+
+    if (currentIdx >= total) {
+      stopSimulation();
+      updateStatus('🎉 코스 완주 시뮬레이션 완료! 그려진 도안과 100% 일치합니다');
+    }
+  }, 45);
 }
 
 function stopSimulation() {
