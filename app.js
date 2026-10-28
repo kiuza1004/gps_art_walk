@@ -11,15 +11,15 @@ const Mode = {
 };
 
 const TILE_THEMES = {
-  dark: {
-    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    attribution: '&copy; OpenStreetMap &copy; CARTO'
+  osm: {
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '&copy; OpenStreetMap contributors'
   },
   light: {
-    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
     attribution: '&copy; OpenStreetMap &copy; CARTO'
   },
-  osm: {
+  dark: {
     url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     attribution: '&copy; OpenStreetMap contributors'
   }
@@ -226,21 +226,37 @@ function initMap() {
     zoomControl: false
   });
 
-  // 기본 테마: 네온 시인성이 가장 뛰어난 다크 테마
-  setMapTheme('dark');
+  // 기본 테마: 도로와 건물, 한글 지명이 가장 선명하게 보이는 일반 상세 지도(OSM)
+  setMapTheme('osm');
 
   L.control.scale({
     imperial: false,
     metric: true,
     position: 'bottomleft'
   }).addTo(map);
+
+  // 모바일 및 브라우저 레이아웃 직후 지도 타일 빈 공간 방지
+  setTimeout(() => {
+    if (map) map.invalidateSize();
+  }, 150);
+
+  window.addEventListener('resize', () => {
+    if (map) map.invalidateSize();
+  });
 }
 
 function setMapTheme(themeKey) {
-  const theme = TILE_THEMES[themeKey] || TILE_THEMES.dark;
+  const theme = TILE_THEMES[themeKey] || TILE_THEMES.osm;
   if (currentTileLayer) {
     map.removeLayer(currentTileLayer);
   }
+  // 나이트 모드일 경우 고대비 나이트 필터 클래스 적용 (지명 및 골목길 시인성 100% 보존)
+  if (themeKey === 'dark') {
+    mapContainer.classList.add('map-theme-night');
+  } else {
+    mapContainer.classList.remove('map-theme-night');
+  }
+
   currentTileLayer = L.tileLayer(theme.url, {
     maxZoom: 19,
     attribution: theme.attribution
