@@ -444,6 +444,14 @@ const btnConfirmSaveCourse = document.getElementById('btnConfirmSaveCourse');
 const savedCoursesList = document.getElementById('savedCoursesList');
 const btnVaultClose = document.getElementById('btnVaultClose');
 
+// 상세 사용설명서 (User Guide) 모달
+const btnOpenGuide = document.getElementById('btnOpenGuide');
+const btnMiniOpenGuide = document.getElementById('btnMiniOpenGuide');
+const userGuideModal = document.getElementById('userGuideModal');
+const btnGuideClose = document.getElementById('btnGuideClose');
+const guideTabBtns = document.querySelectorAll('.guide-tab-btn');
+const guideSections = document.querySelectorAll('.guide-section');
+
 const alertModal = document.getElementById('alertModal');
 const alertModalMessage = document.getElementById('alertModalMessage');
 const btnAlertClose = document.getElementById('btnAlertClose');
@@ -681,6 +689,37 @@ function initEvents() {
   btnConfirmSaveCourse.addEventListener('click', saveCurrentCourseToVault);
   btnVaultClose.addEventListener('click', () => {
     savedCoursesModal.style.display = 'none';
+  });
+
+  // 상세 사용설명서 열기 / 닫기 / 탭 필터링
+  if (btnOpenGuide) {
+    btnOpenGuide.addEventListener('click', () => {
+      userGuideModal.style.display = 'flex';
+    });
+  }
+  if (btnMiniOpenGuide) {
+    btnMiniOpenGuide.addEventListener('click', () => {
+      userGuideModal.style.display = 'flex';
+    });
+  }
+  if (btnGuideClose) {
+    btnGuideClose.addEventListener('click', () => {
+      userGuideModal.style.display = 'none';
+    });
+  }
+  guideTabBtns.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const targetSec = tab.dataset.gsec;
+      guideTabBtns.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      guideSections.forEach(sec => {
+        if (targetSec === 'all' || sec.dataset.gsec === targetSec) {
+          sec.style.display = 'block';
+        } else {
+          sec.style.display = 'none';
+        }
+      });
+    });
   });
 
   // 시뮬레이션 및 GPX

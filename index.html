@@ -8,7 +8,7 @@
   <!-- Leaflet 1.9.4 CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-  <link rel="stylesheet" href="style.css?v=argon_6">
+  <link rel="stylesheet" href="style.css?v=argon_7">
 </head>
 <body>
   <!-- 1. 메인 지도 컨테이너 -->
@@ -25,6 +25,7 @@
     <div class="mini-hud-actions">
       <button id="btnMiniQuickTrack" class="btn-mini btn-mini-start">🚶 시작</button>
       <button id="btnMiniOpenVault" class="btn-mini" title="저장된 코스 보관함">📂 보관함</button>
+      <button id="btnMiniOpenGuide" class="btn-mini" title="전체 메뉴 사용설명서">📖 설명서</button>
       <button id="btnExpandUi" class="btn-mini btn-mini-expand">⚙️ 설정 펼치기</button>
     </div>
   </div>
@@ -48,12 +49,13 @@
       </div>
     </div>
 
-    <!-- 3단 모드 선택 탭 + 코스 보관함 버튼 -->
+    <!-- 5단 모드 선택 탭 + 코스 보관함 + 사용설명서 버튼 -->
     <div class="mode-tabs" id="modeTabs">
-      <button class="mode-tab active" data-mode="FREE_DRAW">🎨 자유 그리기</button>
-      <button class="mode-tab" data-mode="FOLLOW_ROUTE">✍️ 밑그림 스냅</button>
-      <button class="mode-tab" data-mode="AUTO_SHAPE">✨ 도형 코스</button>
+      <button class="mode-tab active" data-mode="FREE_DRAW">🎨 자유그리기</button>
+      <button class="mode-tab" data-mode="FOLLOW_ROUTE">✍️ 밑그림스냅</button>
+      <button class="mode-tab" data-mode="AUTO_SHAPE">✨ 도형코스</button>
       <button type="button" id="btnOpenVault" class="mode-tab vault-tab">📂 보관함 <span id="vaultCountBadge" class="vault-badge">0</span></button>
+      <button type="button" id="btnOpenGuide" class="mode-tab guide-tab">📖 설명서</button>
     </div>
     <select id="spinnerMode" style="display: none;">
       <option value="FREE_DRAW">자유 그리기</option>
@@ -289,7 +291,177 @@
     </div>
   </div>
 
-  <!-- 8. 공통 알림 모달 -->
+  <!-- 8. 상세 사용설명서 (User Guide) 모달 -->
+  <div id="userGuideModal" class="modal-overlay" style="display: none;">
+    <div class="modal-dialog guide-modal">
+      <div class="modal-header">
+        <span>📖 GPS Art Walk 상세 사용설명서</span>
+        <p class="modal-subtitle">모든 메뉴와 버튼의 기능을 빠짐없이 안내합니다</p>
+      </div>
+
+      <div class="guide-filter-tabs" id="guideFilterTabs">
+        <button type="button" class="guide-tab-btn active" data-gsec="all">전체 보기</button>
+        <button type="button" class="guide-tab-btn" data-gsec="top">상단·모드 메뉴</button>
+        <button type="button" class="guide-tab-btn" data-gsec="course">도형·비교·보관함</button>
+        <button type="button" class="guide-tab-btn" data-gsec="control">우측·하단·트래킹</button>
+      </div>
+
+      <div class="modal-body guide-body" id="guideBody">
+        <!-- 섹션 1: 상단 헤더 & 지도 배경 테마 -->
+        <div class="guide-section" data-gsec="top">
+          <div class="guide-sec-title">1️⃣ 상단 바 & 지도 배경 테마 메뉴</div>
+          <div class="guide-card">
+            <div class="guide-item">
+              <span class="guide-badge">🗺️ 일반</span>
+              <p>건물, 골목길, 공원, 보행로 등 실제 지형지물 정보가 가장 상세하게 표시되는 표준 OpenStreetMap 지도입니다.</p>
+            </div>
+            <div class="guide-item">
+              <span class="guide-badge">☀️ 밝은배경</span>
+              <p>지도의 원색 채도를 낮추고 밝은 파스텔 톤으로 전환하여, 지도가 지워지지 않으면서 <b>분홍색 가이드 코스와 시안색 이동 궤적이 가장 선명하게</b> 보이도록 해줍니다.</p>
+            </div>
+            <div class="guide-item">
+              <span class="guide-badge">🌙 나이트</span>
+              <p>야간 산책·러닝 시 눈부심을 방지하는 다크 고대비 지도입니다. 네온 컬러 코스가 야광처럼 뚜렷하게 부각됩니다.</p>
+            </div>
+            <div class="guide-item">
+              <span class="guide-badge">▲ 접기</span>
+              <p>코스 설정이 끝난 후 위·아래 메뉴창을 모두 숨기고 <b>오직 지도만 넓게 보면서</b> 걸을 수 있는 전체화면(Zen Mode)으로 전환합니다.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 섹션 2: 5대 메인 모드 탭 -->
+        <div class="guide-section" data-gsec="top">
+          <div class="guide-sec-title">2️⃣ 메인 모드 선택 탭 (5종)</div>
+          <div class="guide-card">
+            <div class="guide-item">
+              <span class="guide-badge badge-cyan">🎨 자유그리기</span>
+              <p>별도의 밑그림 가이드 없이 바로 <b>[🚶 기록 시작]</b>을 눌러 내가 실제로 걸어가는 GPS 발자취를 지도 위에 자유롭게 그리는 기본 모드입니다.</p>
+            </div>
+            <div class="guide-item">
+              <span class="guide-badge badge-cyan">✍️ 밑그림스냅</span>
+              <p>지도 위에 손가락(모바일)이나 마우스(PC)로 원하는 그림을 직접 그리면, 손을 떼는 즉시 <b>주변의 실제 보행자 도로·산책로에 맞춰 걷기 가능한 길로 자동 스냅(매칭)</b>해 줍니다.</p>
+            </div>
+            <div class="guide-item">
+              <span class="guide-badge badge-pink">✨ 도형코스</span>
+              <p><b>30종의 예쁜 프리셋 도형</b>(강아지, 고양이, 토끼, 곰돌이, 나비, 백조, 코끼리, 돌고래, 펭귄, 다람쥐, 유니콘, 거북이, 클로버, 튤립, 소나무, 단풍잎, 초승달, 하트, 별, 번개, 비행기, 요트, 로켓, 커피잔 등)과 목표 거리(1.0~10.0km)를 선택하면 현재 지도 중심의 실제 보행길로 코스를 자동 생성합니다.</p>
+            </div>
+            <div class="guide-item">
+              <span class="guide-badge badge-amber">📂 보관함</span>
+              <p>마음에 드는 도형 코스나 직접 그린 코스에 이름을 붙여 <b>별도 저장</b>해 두고, 언제든 다시 불러와 걸을 수 있는 나만의 코스 금고입니다.</p>
+            </div>
+            <div class="guide-item">
+              <span class="guide-badge badge-purple">📖 설명서</span>
+              <p>현재 보고 계신 상세 사용설명서 창을 언제든 다시 열어 각 메뉴와 버튼의 기능을 확인할 수 있습니다.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 섹션 3: 도형 스튜디오 & 코스 정보·도안 비교 메뉴 -->
+        <div class="guide-section" data-gsec="course">
+          <div class="guide-sec-title">3️⃣ 도형 스튜디오 & 도안 비교·검증 메뉴</div>
+          <div class="guide-card">
+            <div class="guide-item">
+              <span class="guide-badge">🐾 카테고리 탭 & SVG 프리뷰</span>
+              <p>도형 스튜디오에서 <b>[전체 30 / 동물 15 / 자연·꽃 5 / 심볼·탈것 10]</b> 탭으로 분류해 볼 수 있으며, 상단 프리뷰 창에서 원본 실루엣과 출발점(하늘색 점)을 즉시 확인합니다.</p>
+            </div>
+            <div class="guide-item">
+              <span class="guide-badge">📏 목표 외곽 둘레 슬라이더</span>
+              <p><b>1.0km(가벼운 산책)부터 10.0km(장거리 러닝)</b>까지 0.5km 단위로 코스 크기를 조절하며, 예상 소요 시간(분)이 자동 계산됩니다.</p>
+            </div>
+            <div class="guide-item">
+              <span class="guide-badge badge-amber">💾 코스 저장 (상단 서브바)</span>
+              <p>방금 생성된 코스가 마음에 들 때 누르면 즉시 보관함 저장 창이 열려 이름을 지정해 영구 보관할 수 있습니다.</p>
+            </div>
+            <div class="guide-item">
+              <span class="guide-badge">🔄 길 재매칭</span>
+              <p>지도를 드래그하여 다른 동네나 공원으로 이동한 뒤 누르면, <b>이동한 화면 중심의 실제 길에 맞춰</b> 현재 도형 코스를 즉시 다시 그려줍니다.</p>
+            </div>
+            <div class="guide-item">
+              <span class="guide-badge badge-pink">🔍 도안 비교 (검증 패널)</span>
+              <p>실제 길로 변환된 코스가 원래 의도한 도형과 잘 맞는지 비교·조정하는 핵심 메뉴입니다.<br>
+              • <b>실제 보행길만</b>: 원본 도안을 숨기고 실제 걸어야 할 도로 코스만 표시<br>
+              • <b>1:1 겹쳐 비교</b>: 실제 도로 코스와 반투명 원본 도안을 겹쳐 일치도 검증<br>
+              • <b>원본 도안만</b>: 도로 매칭 전 순수 도형 외곽선만 단독 표시<br>
+              • <b>원본 도안 투명도 (5%~95%)</b>: 겹쳐진 원본 그림의 진하기 조절<br>
+              • <b>도안 회전 각도 (0°~360°)</b>: 동네 골목길 방향에 맞춰 도형을 15° 단위로 회전시켜 도로 일치도를 높임</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 섹션 4: 코스 보관함 상세 -->
+        <div class="guide-section" data-gsec="course">
+          <div class="guide-sec-title">4️⃣ 나만의 코스 보관함 (저장·불러오기)</div>
+          <div class="guide-card">
+            <div class="guide-item">
+              <span class="guide-badge badge-amber">💾 현재 코스 저장</span>
+              <p>코스 이름을 입력하고 저장하면 도형 종류, 거리, 회전 각도, 실제 보행길 좌표, 원본 도안 좌표가 브라우저에 영구 저장됩니다.</p>
+            </div>
+            <div class="guide-item">
+              <span class="guide-badge badge-cyan">📍 불러오기 & 🗑️ 삭제</span>
+              <p>저장된 목록에서 <b>[📍 불러오기]</b>를 누르면 언제든 해당 코스로 지도가 즉시 이동·복원되며, <b>[🗑️]</b> 버튼으로 불필요한 코스를 삭제합니다.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 섹션 5: 우측 플로팅 버튼 & 미니 HUD 바 -->
+        <div class="guide-section" data-gsec="control">
+          <div class="guide-sec-title">5️⃣ 우측 플로팅 버튼 & 지도만 보기 미니 바</div>
+          <div class="guide-card">
+            <div class="guide-item">
+              <span class="guide-badge badge-cyan">🗺️ 지도만 보기 / ⚙️ 메뉴 보이기</span>
+              <p>상·하단 메뉴창이 지도를 가리지 않도록 숨기거나 다시 펼칩니다. 메뉴를 숨기면 상단에 <b>초소형 미니 바(코스명 | 이동거리 | 🚶 시작 | 📂 보관함 | 📖 설명서 | ⚙️ 설정 펼치기)</b>만 남습니다.</p>
+            </div>
+            <div class="guide-item">
+              <span class="guide-badge badge-purple">▶️ 시뮬레이션 / ⏹️ 정지</span>
+              <p>실제로 나가서 걷기 전에 <b>🚩 출발·도착점</b>부터 코스 끝까지 그려진 도안의 모든 정점을 <b>100% 오차 없이 똑같이 따라가며</b> 완주 경로와 거리를 가상으로 미리 걸어보는 기능입니다.</p>
+            </div>
+            <div class="guide-item">
+              <span class="guide-badge">📥 GPX</span>
+              <p>생성된 가이드 코스나 내가 실제로 걸은 GPS 궤적을 표준 <b>.gpx 파일로 다운로드</b>하여 스마트워치(가민·애플·갤럭시워치)나 러닝 앱(Strava 등)에서 사용할 수 있습니다.</p>
+            </div>
+            <div class="guide-item">
+              <span class="guide-badge">📍 내 위치</span>
+              <p>현재 스마트폰·PC의 GPS 위치로 지도 중심을 즉시 이동시키고 파란색 펄스 마커로 내 위치를 표시합니다.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 섹션 6: 하단 텔레메트리 HUD & 트래킹 컨트롤 -->
+        <div class="guide-section" data-gsec="control">
+          <div class="guide-sec-title">6️⃣ 하단 운동 지표 & GPS 기록 컨트롤</div>
+          <div class="guide-card">
+            <div class="guide-item">
+              <span class="guide-badge">📊 이동 거리 · 소요 시간 · 소모 칼로리</span>
+              <p>걷거나 시뮬레이션을 진행하는 동안 이동 거리(km), 경과 시간(MM:SS), 예상 소모 칼로리(kcal)를 실시간으로 계산해 보여줍니다.</p>
+            </div>
+            <div class="guide-item">
+              <span class="guide-badge">🚩 출발·도착점 & ①②③④ 방향 배지</span>
+              <p>지도 위의 <b>🚩 출발·도착점</b> 마커에서 시작하여 <b>① → ② → ③ → ④</b> 번호 순서대로 분홍색 가이드 선을 따라 걸으면 도형이 완성됩니다.</p>
+            </div>
+            <div class="guide-item">
+              <span class="guide-badge badge-green">🚶 기록 시작</span>
+              <p>실시간 GPS 트래킹을 시작합니다. 시작과 동시에 메뉴창이 자동으로 접혀 넓은 지도를 보며 걸을 수 있고, 내가 걸은 실제 궤적은 <b>밝은 네온 시안색(하늘색) 선</b>으로 그려집니다.</p>
+            </div>
+            <div class="guide-item">
+              <span class="guide-badge badge-pink">⏹️ 일시 정지</span>
+              <p>잠시 휴식할 때 GPS 기록과 타이머를 일시 정지하며, 지금까지 걸은 데이터는 안전하게 자동 유지됩니다.</p>
+            </div>
+            <div class="guide-item">
+              <span class="guide-badge">🗑️ 초기화</span>
+              <p>현재 지도 위에 그려진 가이드 코스와 이동 궤적을 모두 지우고 처음 상태로 깨끗하게 리셋합니다. (단, <b>📂 보관함</b>에 별도 저장한 코스는 지워지지 않고 안전하게 보존됩니다.)</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="btnGuideClose" class="btn-modal btn-confirm">확인 (설명서 닫기)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. 공통 알림 모달 -->
   <div id="alertModal" class="modal-overlay" style="display: none;">
     <div class="modal-dialog">
       <div class="modal-header">알림</div>
@@ -303,6 +475,6 @@
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
           integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  <script src="app.js?v=argon_6"></script>
+  <script src="app.js?v=argon_7"></script>
 </body>
 </html>
