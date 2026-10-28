@@ -1,0 +1,390 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: #121212;
+  color: #FFFFFF;
+}
+
+#mapView {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
+
+/* 터치 그리기 모드 시 맵 조작 차단 */
+#mapView.drawing-active {
+  cursor: crosshair;
+}
+
+/* 1. 상단 모드 패널 */
+.top-panel {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  right: 16px;
+  z-index: 1000;
+  background-color: #2D2D34;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
+  padding: 8px 14px;
+}
+
+.panel-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mode-label {
+  font-size: 15px;
+  font-weight: 700;
+  color: #4FC3F7;
+  white-space: nowrap;
+  margin-right: 10px;
+}
+
+.mode-select {
+  flex: 1;
+  height: 44px;
+  background-color: #383842;
+  color: #FFFFFF;
+  border: 1px solid #4FC3F7;
+  border-radius: 10px;
+  padding: 0 12px;
+  font-size: 15px;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+  appearance: auto;
+}
+
+/* 2. 현재 생성된 모양 표시 뱃지 */
+.shape-badge {
+  position: absolute;
+  top: 80px;
+  right: 16px;
+  z-index: 1000;
+  background: linear-gradient(135deg, #2D2D34, #1E1E24);
+  color: #FFB300;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 179, 0, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  letter-spacing: 0.3px;
+}
+
+/* 3. 내 위치 플로팅 버튼 */
+.btn-my-location {
+  position: absolute;
+  right: 16px;
+  bottom: 190px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(145deg, #1E88E5, #1565C0);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 28px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition: all 0.15s ease;
+}
+
+.btn-my-location:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* 4. 하단 컨트롤 패널 */
+.bottom-panel {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
+  z-index: 1000;
+  background: linear-gradient(180deg, #2D2D34 0%, #1F1F24 100%);
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4);
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.status-text {
+  text-align: center;
+  font-size: 17px;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin-bottom: 6px;
+  letter-spacing: -0.2px;
+}
+
+.coords-text {
+  text-align: center;
+  font-size: 12px;
+  color: #A0A0A0;
+  margin-bottom: 14px;
+  font-family: monospace;
+}
+
+.button-group {
+  display: flex;
+  gap: 10px;
+}
+
+/* 3D 입체 버튼 공통 */
+.btn-3d {
+  flex: 1;
+  height: 56px;
+  border: none;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #FFFFFF;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  position: relative;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.btn-3d:active:not(:disabled) {
+  transform: translateY(3px);
+}
+
+.btn-3d:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  filter: grayscale(0.6);
+}
+
+/* 시작 버튼 */
+.btn-start {
+  background: linear-gradient(180deg, #00C853 0%, #009624 100%);
+  box-shadow: 0 5px 0 #00600f, 0 8px 15px rgba(0, 200, 83, 0.35);
+}
+
+.btn-start:active:not(:disabled) {
+  box-shadow: 0 2px 0 #00600f, 0 4px 8px rgba(0, 200, 83, 0.2);
+}
+
+/* 종료 버튼 */
+.btn-stop {
+  background: linear-gradient(180deg, #FF1744 0%, #D50000 100%);
+  box-shadow: 0 5px 0 #8b0000, 0 8px 15px rgba(255, 23, 68, 0.35);
+}
+
+.btn-stop:active:not(:disabled) {
+  box-shadow: 0 2px 0 #8b0000, 0 4px 8px rgba(255, 23, 68, 0.2);
+}
+
+/* 초기화 버튼 */
+.btn-clear {
+  background: linear-gradient(180deg, #546E7A 0%, #37474F 100%);
+  box-shadow: 0 5px 0 #212121, 0 8px 15px rgba(0, 0, 0, 0.4);
+}
+
+.btn-clear:active:not(:disabled) {
+  box-shadow: 0 2px 0 #212121, 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* 5. 모달 다이얼로그 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal-dialog {
+  background-color: #24242C;
+  width: 100%;
+  max-width: 380px;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.modal-header {
+  font-size: 18px;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.modal-body {
+  margin-bottom: 24px;
+}
+
+.modal-label {
+  display: block;
+  font-size: 14px;
+  color: #B0B0B0;
+  margin-bottom: 8px;
+}
+
+.modal-select {
+  width: 100%;
+  height: 46px;
+  background-color: #32323D;
+  color: #FFFFFF;
+  border: 1px solid #4FC3F7;
+  border-radius: 10px;
+  padding: 0 12px;
+  font-size: 15px;
+  font-weight: 600;
+  outline: none;
+  margin-bottom: 20px;
+}
+
+.distance-label {
+  font-size: 15px;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin-bottom: 10px;
+}
+
+.distance-slider {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: #42424E;
+  outline: none;
+  accent-color: #4FC3F7;
+  cursor: pointer;
+}
+
+.modal-message {
+  font-size: 15px;
+  color: #DDDDDD;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  text-align: center;
+  padding: 10px 0;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.btn-modal {
+  flex: 1;
+  height: 46px;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-cancel {
+  background-color: #3A3A46;
+  color: #BBBBBB;
+}
+
+.btn-cancel:hover {
+  background-color: #464654;
+}
+
+.btn-confirm {
+  background: linear-gradient(135deg, #0288D1, #0277BD);
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(2, 136, 209, 0.35);
+}
+
+.btn-confirm:hover {
+  background: linear-gradient(135deg, #039BE5, #0288D1);
+}
+
+/* Leaflet 컨트롤 및 스케일 바 커스텀 */
+.leaflet-control-scale-line {
+  background: rgba(45, 45, 52, 0.85) !important;
+  color: #FFFFFF !important;
+  border: 1px solid #4FC3F7 !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
+.leaflet-bottom.leaflet-left {
+  bottom: 200px;
+  left: 16px;
+}
+
+/* 사용자 GPS 위치 펄스 마커 애니메이션 */
+.gps-pulse-marker {
+  width: 16px;
+  height: 16px;
+  background-color: #2196F3;
+  border: 3px solid #FFFFFF;
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(33, 150, 243, 0.8);
+  position: relative;
+}
+
+.gps-pulse-marker::after {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background-color: rgba(33, 150, 243, 0.4);
+  animation: gpsPulse 1.8s infinite ease-out;
+}
+
+@keyframes gpsPulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
