@@ -1,82 +1,44 @@
-# GPS Art Walk (GPS 아트 워크 웹앱)
+# GPS Art Walk — Argon Edition
 
-위치 기반 실시간 GPS 아트 드로잉 및 러닝 코스 웹 애플리케이션입니다.
-걷거나 달리면서 지도 위에 그림을 그리거나, 원하는 모양의 도로 코스를 자동으로 생성하여 따라 걸을 수 있습니다.
+실시간 보행자 도로망 매칭(Pedestrian Road Matching)과 도안 검증 스튜디오를 결합한 차세대 GPS 아트 웹 애플리케이션입니다.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Edition](https://img.shields.io/badge/edition-ARGON-ff0055.svg)
 ![Leaflet](https://img.shields.io/badge/map-Leaflet%201.9.4-brightgreen.svg)
-![OSM](https://img.shields.io/badge/tiles-OpenStreetMap-orange.svg)
-![Routing](https://img.shields.io/badge/API-OSRM%20Public%20API-informational.svg)
+![Cost](https://img.shields.io/badge/cost-%240%20Free-00e676.svg)
 
 ---
 
-## 🌟 주요 기능
+## 🚀 Argon Edition 핵심 업그레이드 사항
 
-1. **자유 그리기 (Free Draw)**
-   - GPS를 켜고 이동한 궤적이 실시간으로 지도 위에 선으로 그려집니다.
-   - 이동 경로 및 실시간 현재 좌표(위도/경도)가 표시됩니다.
+1. **사이버 글래스모피즘(Cyber-Glassmorphism) UI & 3종 지도 테마 스위처**
+   - **🌙 다크 테마 (CartoDB Dark Matter)**: 네온 핫핑크 코스와 시안 블루 GPS 궤적이 밤하늘의 네온사인처럼 빛나는 고대비 다크 모드
+   - **☀️ 라이트 테마 (CartoDB Positron)**: 복잡한 지도 요소를 덜어내고 아트 라인만 돋보이게 하는 클린 백지도
+   - **🗺️ 일반 테마 (OpenStreetMap Standard)**: 건물과 골목 정보를 상세히 보여주는 표준 보행 지도
 
-2. **경로 따라가기 (Follow Route)**
-   - 지도 위에 손가락이나 마우스로 원하는 밑그림을 직접 그립니다.
-   - 드로잉 완료 시 **OSRM Map Matching API**를 통해 실제 주변 도로망에 자동으로 스냅(정렬)됩니다.
-   - `시작` 버튼을 누르고 생성된 도로 밑그림을 따라 산책/러닝을 즐길 수 있습니다.
+2. **✨ GPS 아트 도안 스튜디오 (실시간 SVG 프리뷰 + 10종 비주얼 카드)**
+   - 답답한 드롭다운 대신 10종 도형(강아지, 고양이, 공룡, 새, 하트, 별, 자동차, 물고기, 집, 왕관)을 한눈에 고르는 그리드 카드 UI
+   - 도형 선택 즉시 모티브 설명(예: 스코티시 테리어 실루엣)과 **실시간 SVG 외곽선 및 출발점 프리뷰** 제공
+   - 목표 둘레 거리 설정 시 성인 보행 속도 기준 **예상 소요 시간(분)** 자동 계산
 
-3. **자동 모양 만들기 (Auto Shape)**
-   - 10종의 다양한 프리셋 모양 지원:
-     - 🐶 강아지 (기본 2.0km)
-     - 🐱 고양이 (기본 1.5km)
-     - 🦖 공룡 (기본 3.0km)
-     - 🐦 새 (기본 2.5km)
-     - ❤️ 하트 (기본 1.5km)
-     - ⭐ 별 (기본 2.0km)
-     - 🚗 자동차 (기본 2.0km)
-     - 🐟 물고기 (기본 1.5km)
-     - 🏠 집 (기본 1.5km)
-     - 👑 왕관 (기본 2.0km)
-   - 최대 허용 거리(0.5km ~ 10.0km) 슬라이더 조절 기능.
-   - 지도 중심 기준으로 **OSRM Route API**를 호출하여 최적의 실제 도로 코스를 자동 생성합니다.
+3. **🔍 인터랙티브 도안 맞춰보기 + 도안 회전(0°~360°) & 길 재매칭**
+   - **`실제 보행길만` / `1:1 겹쳐 비교` / `원본 도안만`** 3단 뷰 전환 및 실시간 투명도 슬라이더
+   - **도안 회전 슬라이더 (`0° ~ 360°`)**: 동네의 도로망 방향(대각선 길, 격자 블록)에 맞춰 도안을 회전시켜 도로와의 일치율을 극대화
+   - **`🔄 길 재매칭`**: 지도를 원하는 동네나 공원으로 이동한 뒤 원클릭으로 해당 위치의 보행길에 즉시 재매칭
+   - **도안 일치도(`%`) 자동 산출**: 원본 정점과 스냅된 실제 도로 간의 오차를 계산하여 형태 보존율 표시
 
-4. **데이터 보존 (Persistence)**
-   - 브라우저 로컬 스토리지(`localStorage`)를 통해 새로고침이나 브라우저 재방문 시에도 작업 중이던 코스와 이동 경로를 복원합니다.
+4. **이중 스트로크(Double-Stroke Halo) & 경유지 순서 번호 마커(`1`→`4`)**
+   - 어떤 지도 배경 위에서도 선이 묻히지 않도록 다크 글로우 외곽 케이싱 + 네온 코어 라인 이중 렌더링
+   - 초보자도 코스를 헷갈리지 않고 한 바퀴 완주할 수 있도록 진행 방향 순서대로 `🚩 출발점` 및 `1`~`4` 경유지 배지 표시
 
-5. **비용 0원 & 크로스 플랫폼 지원**
-   - 유료 지도 API 키 없이 순수 오픈소스 기술(Leaflet, OpenStreetMap, OSRM)로 동작합니다.
-   - 스마트폰 모바일 브라우저(크롬, 사파리, 삼성인터넷) 및 PC 데스크톱 브라우저에 모두 최적화된 반응형 3D UI를 제공합니다.
+5. **🏃 가상 걷기 시뮬레이터 & 실시간 텔레메트리 HUD + GPX 내보내기**
+   - **`▶️ 코스 시뮬레이션`**: 밖으로 나가기 전에 생성된 실제 보행길을 따라 가상으로 완주하며 그림이 완성되는 과정을 미리 검증
+   - **실시간 텔레메트리**: 이동 거리(`km`), 소요 시간(`MM:SS`), 소모 칼로리(`kcal`) 실시간 계기판
+   - **`📥 GPX 저장`**: 생성된 코스나 완주 기록을 표준 `.gpx` 파일로 다운로드하여 스마트워치 및 러닝 앱 연동 가능
 
 ---
 
-## 🛠️ 기술 스택
+## 🌐 라이브 서비스 접속
 
-- **Map Engine**: [Leaflet.js 1.9.4](https://leafletjs.com/) (하위 호환성 및 모바일 터치 최적화)
-- **Map Tiles**: [OpenStreetMap (OSM)](https://www.openstreetmap.org/)
-- **Routing & Snapping**: [Project OSRM Public API](https://project-osrm.org/) (Match v1 & Route v1)
-- **Location Tracking**: HTML5 Geolocation API (`navigator.geolocation.watchPosition`)
-- **Frontend**: Vanilla JavaScript (ES5/ES6), Responsive CSS3 (3D Glassmorphism), Semantic HTML5
-- **Native Android Code**: 기존 Android 네이티브 소스코드는 `/app` 디렉터리에 그대로 보존되어 있습니다.
-
----
-
-## 🚀 실행 방법
-
-### 방법 1: 웹 서버로 즉시 실행
-별도의 빌드 과정 없이 정적 웹 서버(VS Code Live Server, Python 등)로 바로 구동할 수 있습니다.
-```bash
-# Python 내장 웹 서버 실행 예시 (포트 8000)
-python -m http.server 8000
-```
-브라우저에서 `http://localhost:8000` 접속
-
-### 방법 2: GitHub Pages 배포 (모바일에서 바로 접속)
-1. GitHub 저장소(`https://github.com/kiuza1004/gps_art_walk`)로 이동합니다.
-2. **Settings** -> **Pages** 메뉴 진입.
-3. **Build and deployment** -> Branch를 `main` / `/(root)` 로 선택 후 **Save**를 클릭합니다.
-4. 배포 완료 후 제공되는 URL (`https://kiuza1004.github.io/gps_art_walk/`)로 스마트폰에서 바로 접속하여 GPS 아트를 이용할 수 있습니다.
-
----
-
-## 📱 조작 가이드
-
-- **시작**: GPS 트래킹을 시작하여 이동 경로를 기록합니다.
-- **종료**: 현재 진행 중인 GPS 기록을 중지합니다.
-- **초기화**: 그려진 가이드 선 및 GPS 이동 경로를 모두 지웁니다.
-- **내 위치**: 지도의 중심을 현재 스마트폰/PC의 GPS 위치로 즉시 이동합니다.
+- **웹앱 주소**: **[https://kiuza1004.github.io/gps_art_walk/](https://kiuza1004.github.io/gps_art_walk/)**
+- **GitHub 저장소**: [https://github.com/kiuza1004/gps_art_walk](https://github.com/kiuza1004/gps_art_walk)
