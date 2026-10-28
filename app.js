@@ -30,7 +30,14 @@ let myLocationMarker = null;
 // DOM 요소
 const mapContainer = document.getElementById('mapView');
 const spinnerMode = document.getElementById('spinnerMode');
+const shapeInfoBar = document.getElementById('shapeInfoBar');
 const tvCurrentShape = document.getElementById('tvCurrentShape');
+const btnToggleCompare = document.getElementById('btnToggleCompare');
+const compareBar = document.getElementById('compareBar');
+const compareTabs = document.querySelectorAll('.compare-tab');
+const compareOpacitySlider = document.getElementById('compareOpacitySlider');
+const compareOpacityVal = document.getElementById('compareOpacityVal');
+
 const tvStatus = document.getElementById('tvStatus');
 const tvCoords = document.getElementById('tvCoords');
 const btnStart = document.getElementById('btnStart');
@@ -134,6 +141,35 @@ function initEvents() {
 
   btnAlertClose.addEventListener('click', () => {
     alertModal.style.display = 'none';
+  });
+
+  // 도안 맞춰보기(비교) 토글
+  btnToggleCompare.addEventListener('click', () => {
+    const isShowing = compareBar.style.display !== 'none';
+    compareBar.style.display = isShowing ? 'none' : 'block';
+    btnToggleCompare.classList.toggle('active', !isShowing);
+  });
+
+  // 비교 탭 (실제 도로만 / 1:1 겹쳐보기 / 원본 도안만)
+  compareTabs.forEach(tab => {
+    tab.addEventListener('click', (e) => {
+      compareTabs.forEach(t => t.classList.remove('active'));
+      e.target.classList.add('active');
+      const view = e.target.dataset.view;
+      applyCompareView(view);
+    });
+  });
+
+  // 투명도 슬라이더로 원본 도안과 도로 실시간 대조
+  compareOpacitySlider.addEventListener('input', (e) => {
+    const val = parseInt(e.target.value, 10);
+    compareOpacityVal.textContent = `${val}%`;
+    if (idealShapePolygon) {
+      idealShapePolygon.setStyle({
+        fillOpacity: val / 100,
+        opacity: Math.min(1.0, (val / 100) + 0.3)
+      });
+    }
   });
 
   // 창 닫거나 나갈 때 저장
@@ -648,7 +684,7 @@ function generateShape(shapeType, maxLengthKm) {
 
           const distanceKm = (route.distance / 1000).toFixed(1);
           tvCurrentShape.textContent = `실제 보행길 코스: ${SHAPE_NAMES[shapeType]} (${distanceKm}km)`;
-          tvCurrentShape.style.display = 'block';
+          shapeInfoBar.style.display = 'flex';
           updateStatus(`실제 보행길 코스 생성 완료 - 🚩 도로 출발점에서 시작하세요`);
           return;
         }
@@ -665,8 +701,29 @@ function generateShape(shapeType, maxLengthKm) {
     updateGuidePolyline(true, idealGeoPoints);
     showAlert('주변 보행로 탐색에 일시적 지연이 발생하여, 가장 근접한 도로 외곽선으로 생성했습니다.');
     tvCurrentShape.textContent = `외곽 코스: ${SHAPE_NAMES[shapeType]} (${finalLengthKm.toFixed(1)}km)`;
-    tvCurrentShape.style.display = 'block';
+    shapeInfoBar.style.display = 'flex';
     updateStatus(`외곽 도로 코스 생성 완료 - 🚩 출발점에서 시작하세요`);
+  }
+}
+
+function applyCompareView(view) {
+  const currentOpacity = parseInt(compareOpacitySlider.value, 10) / 100;
+
+  if (view === 'road') {
+    // 실제 도로 코스만 보기
+    if (guidePolyline) guidePolyline.setStyle({ opacity: 1.0 });
+    if (idealShapePolygon) idealShapePolygon.setStyle({ opacity: 0, fillOpacity: 0 });
+  } else if (view === 'origin') {
+    // 원본 도안만 보기
+    if (guidePolyline) guidePolyline.setStyle({ opacity: 0 });
+    if (idealShapePolygon) idealShapePolygon.setStyle({ opacity: 1.0, fillOpacity: 0.5 });
+  } else if (view === 'both') {
+    // 1:1 겹쳐보기
+    if (guidePolyline) guidePolyline.setStyle({ opacity: 1.0 });
+    if (idealShapePolygon) idealShapePolygon.setStyle({
+      opacity: Math.min(1.0, currentOpacity + 0.3),
+      fillOpacity: currentOpacity
+    });
   }
 }
 
@@ -678,7 +735,9 @@ function clearAll() {
   removeGuidePolyline();
   removeDrawingListeners();
   clearSavedData();
-  tvCurrentShape.style.display = 'none';
+  shapeInfoBar.style.display = 'none';
+  compareBar.style.display = 'none';
+  btnToggleCompare.classList.remove('active');
 }
 
 // --- 로컬 데이터 저장 및 복원 ---
@@ -687,7 +746,7 @@ function saveDrawingData() {
     trackPoints,
     guidePoints,
     currentMode,
-    isShapeVisible: tvCurrentShape.style.display !== 'none',
+    isShapeVisible: shapeInfoBar.style.display !== 'none',
     shapeText: tvCurrentShape.textContent
   };
   localStorage.setItem('gps_art_drawing_data', JSON.stringify(data));
@@ -711,7 +770,7 @@ function loadDrawingData() {
     }
     if (data.isShapeVisible && data.shapeText) {
       tvCurrentShape.textContent = data.shapeText;
-      tvCurrentShape.style.display = 'block';
+      shapeInfoBar.style.display = 'flex';
     }
 
     // 시작 시에는 자유 그리기 모드로 안전하게 초기화
