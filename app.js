@@ -274,9 +274,9 @@ function updateTrackPolyline() {
 
   const latlngs = trackPoints.map(p => [p.lat, p.lng]);
   trackPolyline = L.polyline(latlngs, {
-    color: '#2196F3',
+    color: '#00E5FF', // 네온 시안 블루 (지도 위 압도적 시인성)
     weight: 8,
-    opacity: 0.9,
+    opacity: 1.0,
     lineCap: 'round',
     lineJoin: 'round'
   }).addTo(map);
@@ -296,13 +296,13 @@ function updateGuidePolyline(isAutoShape = false) {
   const latlngs = guidePoints.map(p => [p.lat, p.lng]);
 
   if (isAutoShape) {
-    // 외곽선 모양을 뚜렷하게 나타내기 위한 외곽선 폴리곤 및 굵은 테두리
+    // 지도(도로/건물/녹지) 위에서 가장 눈에 잘 띄는 네온 핫핑크/마젠타 외곽선 적용
     guidePolygon = L.polygon(latlngs, {
-      color: '#FF6D00',
-      weight: 6,
-      opacity: 0.95,
-      fillColor: '#FFB300',
-      fillOpacity: 0.18,
+      color: '#FF0055', // 네온 핫핑크 테두리
+      weight: 7,
+      opacity: 1.0,
+      fillColor: '#FF4081', // 눈에 확 띄는 내부 하이라이트
+      fillOpacity: 0.25,
       lineCap: 'round',
       lineJoin: 'round'
     }).addTo(map);
@@ -311,21 +311,21 @@ function updateGuidePolyline(isAutoShape = false) {
     const startPoint = latlngs[0];
     const flagIcon = L.divIcon({
       className: 'start-flag-marker',
-      html: '<div class="start-flag-bubble">🏁 출발</div>',
-      iconSize: [60, 30],
-      iconAnchor: [30, 30]
+      html: '<div class="start-flag-bubble">🚩 출발점</div>',
+      iconSize: [70, 32],
+      iconAnchor: [35, 32]
     });
     startPointMarker = L.marker(startPoint, { icon: flagIcon }).addTo(map);
 
     // 도형 전체가 화면에 꽉 차도록 지도 영역 자동 이동
     map.fitBounds(guidePolygon.getBounds().pad(0.2));
   } else {
-    // 수동 밑그림용 점선 폴리라인
+    // 수동 밑그림용 고대비 네온 핑크 점선 폴리라인
     guidePolyline = L.polyline(latlngs, {
-      color: '#FF9800',
-      weight: 5,
+      color: '#FF0055',
+      weight: 6,
       dashArray: '10, 8',
-      opacity: 0.9,
+      opacity: 1.0,
       lineCap: 'round',
       lineJoin: 'round'
     }).addTo(map);
@@ -630,7 +630,9 @@ function saveDrawingData() {
   const data = {
     trackPoints,
     guidePoints,
-    currentMode
+    currentMode,
+    isShapeVisible: tvCurrentShape.style.display !== 'none',
+    shapeText: tvCurrentShape.textContent
   };
   localStorage.setItem('gps_art_drawing_data', JSON.stringify(data));
 }
@@ -647,7 +649,13 @@ function loadDrawingData() {
     }
     if (data.guidePoints && Array.isArray(data.guidePoints)) {
       guidePoints = data.guidePoints;
-      if (guidePoints.length >= 2) updateGuidePolyline();
+      if (guidePoints.length >= 2) {
+        updateGuidePolyline(data.isShapeVisible || false);
+      }
+    }
+    if (data.isShapeVisible && data.shapeText) {
+      tvCurrentShape.textContent = data.shapeText;
+      tvCurrentShape.style.display = 'block';
     }
 
     // 시작 시에는 자유 그리기 모드로 안전하게 초기화
