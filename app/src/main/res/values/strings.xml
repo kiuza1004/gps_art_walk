@@ -1,0 +1,29 @@
+<resources>
+    <string name="app_name">GPS Art</string>
+    <string name="btn_start">시작</string>
+    <string name="btn_stop">종료</string>
+    <string name="btn_clear">초기화</string>
+    <string name="btn_my_location">내 위치</string>
+    <string name="mode_free_draw">자유 그리기</string>
+    <string name="mode_follow_route">경로 따라가기</string>
+    <string name="status_ready">준비 완료</string>
+    <string name="status_recording">기록 중...</string>
+    <string name="status_stopped">기록 종료</string>
+    <string name="status_draw_guide">밑그림을 그리세요</string>
+    <string name="status_guide_done">밑그림 완성 - 시작을 눌러 따라가세요</string>
+    <string name="status_snapping">도로에 맞추는 중...</string>
+    <string name="status_following">경로 따라가기 중...</string>
+    <string name="permission_denied">위치 권한이 필요합니다</string>
+    <string name="mode_auto_shape">자동 모양 만들기</string>
+    <string name="dialog_shape_title">모양 및 최대 크기 설정</string>
+    <string name="shape_dog">강아지 (기본 2.0km)</string>
+    <string name="shape_cat">고양이 (기본 1.5km)</string>
+    <string name="shape_dinosaur">공룡 (기본 3.0km)</string>
+    <string name="shape_bird">새 (기본 2.5km)</string>
+    <string name="shape_heart">하트 (기본 1.5km)</string>
+    <string name="shape_star">별 (기본 2.0km)</string>
+    <string name="shape_car">자동차 (기본 2.0km)</string>
+    <string name="shape_fish">물고기 (기본 1.5km)</string>
+    <string name="shape_house">집 (기본 1.5km)</string>
+    <string name="shape_crown">왕관 (기본 2.0km)</string>
+</resources>
